@@ -55,20 +55,29 @@ app.get('/api/products', route(async (req, res) => {
     if (colErr) return fail(res, 500, 'Could not load collection', colErr.message);
     if (!col) return fail(res, 404, 'Collection not found');
 
-    const { data, error } = await admin
+    const { data: members, error } = await admin
       .from('collection_products')
-      .select('position, products:product_id (*)')
+      .select('product_id, position')
       .eq('collection_id', col.id)
       .order('position')
       .limit(limit);
 
     if (error) return fail(res, 500, 'Could not load products', error.message);
+    if (!members.length) return res.json([]);
 
-    return res.json(
-      data
-        .map((row) => row.products)
-        .filter((p) => p && p.status === 'active')
-    );
+    /* Read through product_cards, not products. It is the storefront shape —
+       it carries primary_image / hover_image and already filters to active
+       rows. Returning raw product rows here meant every card rendered by
+       collection was missing its photography. */
+    const rank = new Map(members.map((m, i) => [m.product_id, i]));
+
+    const { data: cards, error: cardErr } = await admin
+      .from('product_cards').select('*').in('id', [...rank.keys()]);
+
+    if (cardErr) return fail(res, 500, 'Could not load products', cardErr.message);
+
+    /* the collection's own ordering, not the catalogue-wide one */
+    return res.json(cards.sort((a, b) => rank.get(a.id) - rank.get(b.id)));
   }
 
   let query = admin.from('product_cards').select('*').order('position').limit(limit);

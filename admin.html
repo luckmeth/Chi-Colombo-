@@ -87,9 +87,18 @@
       </div>
       <p class="hint">
         Slides play in order. A video slide holds until its clip ends; image
-        slides advance after 6 seconds. Paths are relative to the site root
-        (e.g. <code>assets/hero-veranda.png</code>) or a full URL.
+        slides advance after 6 seconds. Drop a file to upload it, or type a path
+        relative to the site root (e.g. <code>assets/hero-veranda.png</code>).
       </p>
+
+      <div class="dropzone dropzone--wide" id="newSlideZone" data-dz="new-slide"
+           data-folder="hero" data-accept="any" role="button" tabindex="0">
+        <input type="file" hidden
+               accept="image/png,image/jpeg,image/webp,image/avif,image/gif,video/mp4,video/webm,video/quicktime">
+        <p class="dropzone__label">Drop an image or video here to add a slide</p>
+        <p class="dropzone__hint">It is created hidden, so you can write the copy before it goes live</p>
+      </div>
+
       <div id="slideList" class="stack"></div>
     </section>
 

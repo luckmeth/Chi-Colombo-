@@ -58,6 +58,12 @@
     return `linear-gradient(165deg, ${t[0]}, ${t[1]})`;
   };
 
+  /* titles and image URLs arrive from the database, so anything interpolated
+     into markup has to be escaped — a stray quote alone would break out of an
+     attribute and mangle the card */
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
   /* ---------- real logo swap-in ----------
      The inline SVG marks are a stand-in. As soon as assets/logo.png exists
      it replaces them everywhere, so dropping the real file in is the only
@@ -125,9 +131,6 @@
     let index = 0;
     let timer = null;
     let playing = !calm.matches;
-
-    const esc = (s) => String(s ?? '').replace(/[&<>"']/g,
-      (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
     /* only allow hrefs we're happy to render — these can come from the DB */
     const safeHref = (h) => {
@@ -314,16 +317,27 @@
     const el = document.createElement('article');
     el.className = 'card';
 
+    /* Real photography when the product has any, the woven gradient otherwise.
+       The hover layer falls back to a tone so a product with a single photo
+       still gets the two-layer hover treatment rather than a dead card. */
+    const front = product.image
+      ? `<img class="ph ph--main" src="${esc(product.image)}" alt="${esc(product.name)}" loading="lazy">`
+      : `<span class="ph ph--main" style="background-image:${tone(index, 0)}"></span>`;
+
+    const back = product.hover
+      ? `<img class="ph ph--alt" src="${esc(product.hover)}" alt="" loading="lazy">`
+      : `<span class="ph ph--alt" style="background-image:${tone(index, 5)}"></span>`;
+
     el.innerHTML = `
-      <a class="card__media" href="#" aria-label="${product.name}">
-        ${product.badge ? `<span class="card__badge">${product.badge}</span>` : ''}
-        <span class="ph ph--main" style="background-image:${tone(index, 0)}"></span>
-        <span class="ph ph--alt"  style="background-image:${tone(index, 5)}"></span>
+      <a class="card__media" href="#" aria-label="${esc(product.name)}">
+        ${product.badge ? `<span class="card__badge">${esc(product.badge)}</span>` : ''}
+        ${front}
+        ${back}
         <span class="card__quick" role="button" tabindex="0">QUICK ADD</span>
       </a>
       <div class="card__info">
-        <h3 class="card__name">${product.name}</h3>
-        <p class="card__variant">${product.variant}</p>
+        <h3 class="card__name">${esc(product.name)}</h3>
+        <p class="card__variant">${esc(product.variant)}</p>
         <p class="card__price">${money(product.price)}</p>
       </div>`;
 
@@ -357,7 +371,10 @@
       variant: row.default_colour ?? '',
       price: Math.round((row.price_cents ?? 0) / 100),
       badge: row.is_new ? 'NEW' : null,
-      handle: row.handle
+      handle: row.handle,
+      /* product_cards exposes the first two images by position */
+      image: row.primary_image ?? null,
+      hover: row.hover_image ?? null
     });
 
     const swap = async (railId, collection, offset) => {

@@ -73,6 +73,11 @@ h1, h2, h3, h4 { margin: 0; font-weight: 900; }
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center;
+  /* .ph is a <span> for the gradient placeholders and an <img> once real
+     photography is uploaded — this is what makes the two interchangeable */
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .ph--denim { background-image: linear-gradient(105deg, #3d4a3a, #6d7f5c 50%, #2a3327); }
@@ -367,6 +372,13 @@ h1, h2, h3, h4 { margin: 0; font-weight: 900; }
   opacity: 0;
   visibility: hidden;
   transition: opacity .9s var(--ease), visibility .9s;
+
+  /* The copy block is rendered inside each slide, not as a direct child of
+     .hero, so the flex-end alignment up there never reached it — the text
+     rendered against the top of the slide, under the fixed header. Both media
+     layers are absolutely positioned, so .hero__wrap is the only in-flow child. */
+  display: flex;
+  align-items: flex-end;
 }
 
 .hero__slide.is-active { opacity: 1; visibility: visible; }
@@ -412,6 +424,9 @@ h1, h2, h3, h4 { margin: 0; font-weight: 900; }
   position: relative;
   z-index: 3;
   width: 100%;
+  /* clears the announce bar (34px) + fixed header, so tall copy on a short
+     viewport still can't run under the navigation */
+  padding-top: calc(34px + var(--header-h));
   padding-bottom: 64px;
   pointer-events: none;          /* let arrows behind stay clickable */
 }

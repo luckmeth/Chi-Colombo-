@@ -13,7 +13,10 @@ carnage-replica/
 │   └── logo.png          ← YOU NEED TO ADD THIS (see below)
 ├── supabase/
 │   ├── 01_schema.sql     tables, RLS, checkout function
-│   └── 02_seed.sql       catalogue seed
+│   ├── 02_seed.sql       catalogue seed
+│   ├── 03_admin.sql      admins, hero slides, settings
+│   ├── 04_storage.sql    media bucket + storage policies
+│   └── setup_all.sql     all four concatenated, for one-shot setup
 └── server/
     ├── index.js          Express API
     ├── db.js             Supabase clients
@@ -40,14 +43,24 @@ automatically and deletes the SVG stand-ins. No code changes needed.
 
 ## 2. Database
 
-In the Supabase dashboard → **SQL Editor**, run in order:
+**Already applied** to the `Chi colombo` project (`dvvpwmmhybttrijbnakf`). This
+section is for rebuilding it, or setting up a second environment.
 
-1. `supabase/01_schema.sql`
-2. `supabase/02_seed.sql`
-3. `supabase/03_admin.sql`
+Either paste `supabase/setup_all.sql` into the dashboard **SQL Editor**, or
+apply it over the Management API:
 
-**Before running `03_admin.sql`, change the seeded admin email** near the top —
-it currently inserts `methullakvindu5@gmail.com` into `site_admins`.
+```powershell
+$env:SUPABASE_ACCESS_TOKEN = "sbp_..."   # supabase.com/dashboard/account/tokens
+$env:SUPABASE_PROJECT_REF  = "dvvpwmmhybttrijbnakf"
+node supabase/apply.mjs
+```
+
+`setup_all.sql` is generated from `01_schema.sql` + `02_seed.sql` +
+`03_admin.sql`; edit those and regenerate rather than editing it directly. Every
+insert is guarded, so re-running is safe.
+
+**Before a fresh run, change the seeded admin email** in `03_admin.sql` — it
+inserts `methullakvindu5@gmail.com` into `site_admins`.
 
 `03_admin.sql` adds `site_admins`, `hero_slides`, `app_settings`,
 `social_links` and `stock_movements`, plus the `is_admin()` predicate and the
@@ -102,13 +115,14 @@ It raises distinct error codes the API maps to HTTP:
 ## 3. API server
 
 ```bash
-cd carnage-replica/server
+cd server
 npm install
-cp .env.example .env      # then fill in your keys
 npm start
 ```
 
-Keys are in Supabase → Project Settings → API.
+`server/.env` is already populated with this project's URL and keys. On a fresh
+clone, `cp .env.example .env` and fill it from Supabase → Project Settings →
+API.
 
 > `SUPABASE_SERVICE_ROLE_KEY` bypasses RLS. Server-side only — never ship it to
 > the browser. `.gitignore` already excludes `.env`.
@@ -130,6 +144,17 @@ Keys are in Supabase → Project Settings → API.
 | `GET` | `/api/orders` | requires `Authorization: Bearer <token>` |
 | `POST` | `/api/newsletter` | `{ email }` |
 
+Admin-only, all under `/api/admin` and gated by `site_admins`:
+
+| Method | Path | Notes |
+|---|---|---|
+| `POST` | `/api/admin/uploads/sign` | `{ filename, content_type, folder, size }` → signed upload URL |
+| `POST` | `/api/admin/uploads/discard` | `{ url }`, drops an unreferenced object |
+| `GET` | `/api/admin/products/:id/images` | ordered by position |
+| `POST` | `/api/admin/products/:id/images` | `{ url, alt }`, appended last |
+| `POST` | `/api/admin/products/:id/images/reorder` | `{ order: [id, …] }` |
+| `DELETE` | `/api/admin/images/:id` | removes the row *and* the stored file |
+
 Writes are rate limited to 30/min per IP. Stock is re-checked on every cart
 mutation *and* again inside the checkout transaction.
 
@@ -140,17 +165,13 @@ already subscribed, so it can't be used to probe for known emails.
 
 ## 4. Admin panel
 
-Open `admin.html`. Before first use, set your project values near the top of
-`admin.js`:
+Open `admin.html`. The project URL and **anon** key are already filled in near
+the top of `admin.js` — the anon key is meant to be public and RLS still
+applies. Override them per-environment by setting `window.CHIC_SUPABASE_URL` /
+`window.CHIC_SUPABASE_ANON_KEY` before the script runs.
 
-```js
-const SUPABASE_URL      = 'https://YOUR-PROJECT-REF.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR-ANON-KEY';
-```
-
-Only the **anon** key goes here — it's meant to be public and RLS still applies.
-
-Then create the admin login:
+The master admin account already exists and is linked in `site_admins`. To add
+another, or to reset the password on this one:
 
 ```bash
 cd carnage-replica/server && npm run create-admin
@@ -175,14 +196,34 @@ security boundary. `is_admin()` enforces the same rule again at the RLS layer.
 | Section | What you can do |
 |---|---|
 | Overview | product/order/subscriber counts, revenue, low-stock list |
-| Products & stock | edit title, handle, price, status, audience; ±1/±10 or set-exact stock per variant, logged to `stock_movements` |
-| Hero slider | add/edit/reorder/delete image **and video** slides, set copy and buttons, toggle live |
+| Products & stock | edit title, handle, price, status, audience; ±1/±10 or set-exact stock per variant, logged to `stock_movements`; drag photos in to upload, drag them around to reorder |
+| Hero slider | add/edit/reorder/delete image **and video** slides, set copy and buttons, toggle live; drop a file to upload the media or the video poster |
 | Orders | filter by status, change status |
 | Contact & social | phone, WhatsApp, hotline, emails, address, maps link, shipping rates, announcement bar copy, social links |
 | Subscribers | list + CSV export |
 
 Products are **archived, not deleted** (order history references their
 variants), and variants are deactivated rather than removed.
+
+### Media
+
+Every image and video field is a dropzone — drag a file onto it, or click to
+open a picker. Files go to the public `media` bucket created by
+`04_storage.sql`, under `products/`, `hero/` or `posters/`.
+
+The bytes never pass through the API server. It issues a **signed, single-use
+upload URL** scoped to one path it chooses itself, and the browser PUTs straight
+to Supabase Storage — otherwise a 40 MB hero video would be buffered in the
+server's memory on the way through. The client cannot pick the destination path.
+
+Limits are 50 MB per file (the project ceiling on the free plan) and a MIME
+allow-list enforced in `server/admin.js` *and* by the bucket itself. **SVG is
+refused**: the bucket is world-readable, so an uploaded SVG would be a stored
+XSS payload served from the project's own domain.
+
+For products, image order is what the storefront reads — position 0 is the card
+front and position 1 is the hover image. Drag the thumbnails to change it.
+Deleting a photo removes the stored file as well.
 
 ---
 
@@ -207,14 +248,17 @@ Point the client elsewhere by setting `window.CHIC_API_BASE` before `api.js`.
   Stripe/PayHere and flip to `paid` on webhook confirmation.
 - **No auth UI.** The schema and `/api/orders` support signed-in customers, but
   the page has no login screen.
-- **Product images are CSS gradients.** `product_images` exists and
-  `product_cards` exposes `primary_image` / `hover_image`; the card renderer
-  still draws placeholder gradients. Swap when you have photography.
-- **SQL is unexecuted.** It was written against the Postgres/Supabase docs but
-  not run — I had no database to run it against. Expect to fix small things on
-  first execution. This covers all three files, including `03_admin.sql`.
-- **The admin panel has never talked to a live backend.** Its markup, routing,
-  rendering and gate logic were verified in the browser, and every JS file
-  parses clean, but no request has actually reached Supabase.
-- **No media upload.** Hero slides take a path or URL you type in; put files in
-  `assets/` yourself, or point at Supabase Storage. There is no file picker.
+- **Product cards fall back to gradients.** Real photography renders as soon as
+  a product has images; products without any keep the woven gradient placeholder.
+- **Admin writes have not been exercised.** Sign-in, sign-out and all six
+  sections were driven in a real browser against live data, and the read side
+  of every `/api/admin` route is verified. Creating a product, editing a hero
+  slide and saving contact settings have not been run end to end.
+- **Uploads abandoned mid-edit leak an object.** Dropping a file on a hero
+  slide uploads it immediately, but the slide only points at it once you press
+  Save. Navigate away in between and the object stays in the bucket with
+  nothing referencing it. `POST /api/admin/uploads/discard` exists for this;
+  the panel does not call it yet.
+- **No image transformation.** Uploads are stored and served at their original
+  size, so a 12 MP camera file is what the storefront downloads. Supabase
+  image transformations are enabled on the project but unused.

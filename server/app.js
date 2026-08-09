@@ -3,6 +3,8 @@ import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { randomUUID } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 
 import { admin, currentUser } from './db.js';
 import { adminRouter } from './admin.js';
@@ -99,6 +101,14 @@ app.get('/api/products', route(async (req, res) => {
   let query = admin.from('product_cards').select('*').order('position').limit(limit);
   if (audience) query = query.in('audience', [audience, 'unisex']);
 
+  if (typeof req.query.q === 'string' && req.query.q.trim()) {
+    /* % and _ are LIKE wildcards. Left in, a search for "50%" would match
+       everything, so strip them rather than let a shopper write patterns. */
+    const term = req.query.q.trim().replace(/[%_\\]/g, '').slice(0, 60);
+    if (!term) return res.json([]);
+    query = query.ilike('title', `%${term}%`);
+  }
+
   const { data, error } = await query;
   if (error) return fail(res, 500, 'Could not load products', error.message);
   res.json(data);
@@ -153,6 +163,21 @@ app.get('/api/settings', route(async (_req, res) => {
 /* ---------------------------------------------------------
    Admin (gated inside the router)
    --------------------------------------------------------- */
+
+/* Terms, privacy, refunds and the rest — edited in the admin panel,
+   rendered by the storefront at /pages/<slug>. */
+app.get('/api/pages/:slug', route(async (req, res) => {
+  const { data, error } = await admin
+    .from('content_pages')
+    .select('slug, title, body_html, updated_at')
+    .eq('slug', req.params.slug)
+    .eq('is_published', true)
+    .maybeSingle();
+
+  if (error) return fail(res, 500, 'Could not load the page', error.message);
+  if (!data) return fail(res, 404, 'Page not found');
+  res.json(data);
+}));
 
 app.use('/api/admin', adminLimiter, adminRouter);
 
@@ -227,8 +252,8 @@ app.get('/api/cart/:cartId', route(async (req, res) => {
     .select(`
       id, qty,
       product_variants (
-        id, colour_name, size, price_cents, inventory_qty,
-        products ( id, handle, title, price_cents, currency )
+        id, colour_name, size, colour_hex, price_cents, inventory_qty,
+        products ( id, handle, title, price_cents, currency, product_images ( url, position ) )
       )
     `)
     .eq('cart_id', cartId);
@@ -239,14 +264,23 @@ app.get('/api/cart/:cartId', route(async (req, res) => {
     const variant = row.product_variants;
     const product = variant.products;
     const unit = variant.price_cents ?? product.price_cents;
+
+    /* position 0 is the card front — the same image the shopper clicked */
+    const image = (product.product_images ?? [])
+      .sort((a, b) => a.position - b.position)[0]?.url ?? null;
+
     return {
       item_id: row.id,
       variant_id: variant.id,
       handle: product.handle,
       title: product.title,
       colour: variant.colour_name,
+      colour_hex: variant.colour_hex,
       size: variant.size,
+      image,
       qty: row.qty,
+      /* the cart page caps the quantity stepper at what is actually in stock */
+      inventory_qty: variant.inventory_qty,
       unit_price_cents: unit,
       line_total_cents: unit * row.qty
     };
@@ -439,6 +473,40 @@ app.get('/api/health', route(async (_req, res) => {
   const { error } = await admin.from('products').select('id', { head: true, count: 'exact' });
   res.json({ ok: !error, db: error ? 'unreachable' : 'ok' });
 }));
+
+/* ---------------------------------------------------------
+   Static site — development only.
+
+   On Vercel the edge serves these files and the function only ever sees
+   /api/*, so none of this runs in production. Locally it means one
+   server on one origin with exactly the production URLs: clean URLs,
+   and the same rewrites declared in vercel.json. Keep the two in step.
+   --------------------------------------------------------- */
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+const REWRITES = [
+  [/^\/collections\/[^/]+\/?$/, 'collection.html'],
+  [/^\/products\/[^/]+\/?$/,    'product.html'],
+  [/^\/pages\/[^/]+\/?$/,       'page.html'],
+  [/^\/order\/[^/]+\/?$/,       'confirmation.html'],
+  [/^\/shop\/?$/,               'collection.html'],
+  [/^\/search\/?$/,             'collection.html']
+];
+
+/* extensions:['html'] is the local equivalent of vercel.json's cleanUrls,
+   so /admin resolves to admin.html here too */
+app.use(express.static(ROOT, { extensions: ['html'] }));
+
+app.use((req, res, next) => {
+  /* an unmatched /api path is an API error, not a missing page */
+  if (req.path.startsWith('/api/')) return next();
+
+  const match = REWRITES.find(([pattern]) => pattern.test(req.path));
+  if (match) return res.sendFile(join(ROOT, match[1]));
+
+  res.status(404).sendFile(join(ROOT, '404.html'));
+});
 
 app.use((_req, res) => fail(res, 404, 'No such endpoint'));
 

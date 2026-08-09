@@ -46,11 +46,12 @@ window.ChicAPI = (function () {
     return res.ok && res.data?.ok === true;
   }
 
-  async function products({ collection, audience, limit } = {}) {
+  async function products({ collection, audience, limit, q } = {}) {
     const qs = new URLSearchParams();
     if (collection) qs.set('collection', collection);
     if (audience) qs.set('audience', audience);
     if (limit) qs.set('limit', limit);
+    if (q) qs.set('q', q);
 
     const res = await call('/api/products' + (qs.toString() ? `?${qs}` : ''));
     return res.ok ? res.data : null;
@@ -75,6 +76,12 @@ window.ChicAPI = (function () {
   /** Contact details, socials, marquee copy — all admin-editable. */
   async function settings() {
     const res = await call('/api/settings');
+    return res.ok ? res.data : null;
+  }
+
+  /** A content page (terms, privacy, FAQ …) by slug. */
+  async function page(slug) {
+    const res = await call('/api/pages/' + encodeURIComponent(slug));
     return res.ok ? res.data : null;
   }
 
@@ -163,7 +170,7 @@ window.ChicAPI = (function () {
   }
 
   return {
-    health, products, product, collections, slides, settings,
+    health, products, product, collections, slides, settings, page,
     ensureCart, addItem, setQty, removeItem, getCart, checkout, subscribe
   };
 })();

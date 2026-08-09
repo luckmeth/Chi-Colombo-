@@ -1099,3 +1099,140 @@ h1, h2, h3, h4 { margin: 0; font-weight: 900; }
   .signup { flex-direction: column; gap: 8px; }
   .signup input { border-right: 1px solid rgba(240, 228, 208, .32); }
 }
+
+/* =========================================================
+   Interior pages — listing, product detail, cart, content
+   Added with the multi-page storefront. The home page keeps its own
+   sections above; everything here is shared by /shop, /collections,
+   /products, /cart and /pages.
+   ========================================================= */
+
+/* Interior pages have no hero for the fixed header to float over, so
+   they need to start below it. */
+.page { padding-top: calc(34px + var(--header-h) + 26px); padding-bottom: 90px; }
+
+.wrap--prose { max-width: 760px; }
+
+.crumbs { font-size: 12px; color: var(--muted); margin-bottom: 20px; letter-spacing: .3px; }
+.crumbs a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.crumbs a:hover { color: var(--brown); }
+.crumbs span { margin: 0 4px; }
+
+.page__head { margin-bottom: 30px; }
+.page__title { font-size: clamp(26px, 4vw, 40px); font-weight: 800; letter-spacing: -.4px; color: var(--brown-deep); margin: 0 0 8px; }
+.page__sub { color: var(--muted); font-size: 14px; margin: 0; }
+
+.listing__msg { color: var(--muted); font-size: 14px; padding: 22px 0; }
+
+/* ---------- product grid ---------- */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 34px 18px;
+}
+
+/* ---------- product detail ---------- */
+
+.pdp { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 48px; align-items: start; }
+
+.pdp__figure { position: relative; aspect-ratio: 303 / 403; background: var(--sand); overflow: hidden; border-radius: 2px; }
+.pdp__figure img, .pdp__figure .ph { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.pdp__thumbs { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.pdp__thumb { width: 66px; aspect-ratio: 303 / 403; border: 1px solid transparent; padding: 0; overflow: hidden; cursor: pointer; background: none; }
+.pdp__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pdp__thumb.is-on { border-color: var(--brown); }
+
+.pdp__title { font-size: clamp(24px, 3vw, 34px); font-weight: 800; color: var(--brown-deep); margin: 6px 0 10px; letter-spacing: -.3px; }
+.pdp__price { font-size: 19px; font-weight: 700; color: var(--brown-deep); margin: 0 0 18px; }
+.pdp__price s { color: var(--muted); font-weight: 400; margin-left: 8px; font-size: 15px; }
+.pdp__desc { color: var(--ink); font-size: 14.5px; line-height: 1.7; margin: 0 0 26px; }
+
+.pdp__row { margin-bottom: 20px; }
+.pdp__label { display: block; font-size: 11px; font-weight: 700; letter-spacing: 1.4px; color: var(--muted); margin-bottom: 9px; text-transform: uppercase; }
+
+.swatches { display: flex; gap: 10px; flex-wrap: wrap; }
+.swatch { display: flex; align-items: center; gap: 7px; padding: 6px 12px 6px 7px; border: 1px solid var(--line); border-radius: 999px; background: none; cursor: pointer; font-size: 12.5px; color: var(--ink); }
+.swatch i { width: 16px; height: 16px; border-radius: 50%; display: block; border: 1px solid rgba(0,0,0,.12); }
+.swatch.is-on { border-color: var(--brown-deep); background: var(--paper); }
+
+.sizes { display: flex; gap: 8px; flex-wrap: wrap; }
+.size { min-width: 52px; padding: 11px 12px; border: 1px solid var(--line); background: none; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--ink); }
+.size.is-on { border-color: var(--brown-deep); background: var(--brown-deep); color: var(--cream); }
+/* struck through rather than merely greyed — sold out should be unmistakable */
+.size[disabled] { opacity: .38; cursor: not-allowed; text-decoration: line-through; }
+
+.pdp__stock { font-size: 12.5px; color: var(--muted); margin: 0 0 16px; min-height: 18px; }
+
+.pdp__meta { list-style: none; padding: 0; margin: 24px 0 0; font-size: 12.5px; color: var(--muted); }
+.pdp__meta li { padding: 7px 0; border-top: 1px solid var(--line); }
+.pdp__meta a { color: var(--brown); text-decoration: underline; text-underline-offset: 3px; }
+
+.card__badge--static { position: static; display: inline-block; margin-bottom: 8px; }
+
+/* ---------- cart page ---------- */
+
+.cartpage { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: 48px; align-items: start; }
+.cartpage__empty { grid-column: 1 / -1; text-align: center; padding: 40px 0 60px; }
+.cartpage__empty .btn { margin-top: 10px; }
+
+.cartpage__summary { background: var(--paper); border: 1px solid var(--line); padding: 24px; position: sticky; top: calc(34px + var(--header-h) + 16px); }
+.cartpage__summary h2 { font-size: 13px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--brown-deep); margin: 0 0 18px; }
+
+.cart__row--total { border-top: 1px solid var(--line); padding-top: 14px; margin-top: 4px; }
+.cart__row--total strong { font-size: 19px; }
+
+.cart__viewall { display: block; text-align: center; margin-top: 12px; font-size: 12.5px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+
+/* quantity stepper, shared by the drawer and the cart page */
+.qty { display: inline-flex; align-items: center; border: 1px solid var(--line); margin: 4px 0 8px; }
+.qty button { width: 28px; height: 28px; background: none; border: 0; cursor: pointer; font-size: 15px; line-height: 1; color: var(--brown-deep); }
+.qty button[disabled] { opacity: .3; cursor: not-allowed; }
+.qty__n { min-width: 30px; text-align: center; font-size: 13px; font-weight: 600; }
+
+/* an empty cart shouldn't offer a way forward */
+.btn.is-disabled, .is-disabled { opacity: .45; pointer-events: none; }
+
+/* ---------- content pages ---------- */
+
+.page__body { color: var(--ink); font-size: 15px; line-height: 1.75; }
+.page__body h2 { font-size: 18px; font-weight: 700; color: var(--brown-deep); margin: 32px 0 10px; }
+.page__body p { margin: 0 0 14px; }
+.page__body ul, .page__body ol { margin: 0 0 16px; padding-left: 22px; }
+.page__body li { margin-bottom: 7px; }
+.page__body a { color: var(--brown); text-decoration: underline; text-underline-offset: 3px; }
+.page__body .btn { margin-right: 10px; }
+.page__updated { margin-top: 34px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+
+.footer__legal { display: flex; gap: 16px; }
+.footer__legal a { color: inherit; opacity: .75; text-decoration: underline; text-underline-offset: 3px; }
+.footer__legal a:hover { opacity: 1; }
+
+/* ---------- toast ---------- */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  transform: translate(-50%, 12px);
+  z-index: 200;
+  background: var(--brown-deep);
+  color: var(--cream);
+  padding: 11px 20px;
+  border-radius: 999px;
+  font-size: 13px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .22);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s, transform .25s;
+}
+
+.toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+.toast.is-bad { background: #A63D2F; }
+
+@media (max-width: 900px) {
+  .pdp { grid-template-columns: 1fr; gap: 28px; }
+  .cartpage { grid-template-columns: 1fr; gap: 28px; }
+  .cartpage__summary { position: static; }
+}

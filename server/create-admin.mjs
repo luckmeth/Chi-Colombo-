@@ -18,7 +18,7 @@
      2. adds it to site_admins, so the server-side admin check passes
    ========================================================= */
 
-import 'dotenv/config';
+import './env.js';
 import { createClient } from '@supabase/supabase-js';
 import { createInterface } from 'node:readline';
 import { stdin, stdout } from 'node:process';

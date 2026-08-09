@@ -8,7 +8,7 @@
 window.ChicAPI = (function () {
   'use strict';
 
-  const BASE = window.CHIC_API_BASE ?? 'http://localhost:8787';
+  const BASE = window.CHIC_API_BASE;   /* resolved in config.js */
   const TOKEN_KEY = 'chic_cart_token';
   const CART_KEY = 'chic_cart_id';
 

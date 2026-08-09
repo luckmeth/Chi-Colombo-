@@ -8,12 +8,10 @@
 (function () {
   'use strict';
 
-  const API = window.CHIC_API_BASE ?? 'http://localhost:8787';
-
-  /* Anon key only — safe in a browser, RLS still applies.
-     Replace with your project's values. */
-  const SUPABASE_URL = window.CHIC_SUPABASE_URL ?? 'https://dvvpwmmhybttrijbnakf.supabase.co';
-  const SUPABASE_ANON_KEY = window.CHIC_SUPABASE_ANON_KEY ?? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2dnB3bW1oeWJ0dHJpamJuYWtmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYyNzE4OTksImV4cCI6MjEwMTg0Nzg5OX0.R26fhWrsrpivAwdAoSsA_a9hXfwWr_SdJaovxNsTmjw';
+  /* All three come from config.js, which every page loads first. */
+  const API = window.CHIC_API_BASE;
+  const SUPABASE_URL = window.CHIC_SUPABASE_URL;
+  const SUPABASE_ANON_KEY = window.CHIC_SUPABASE_ANON_KEY;
 
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 

@@ -3,11 +3,17 @@
 Static storefront + Supabase-backed API.
 
 ```
-carnage-replica/
+chic-colombo/
 ├── index.html            storefront markup
+├── admin.html            admin panel
 ├── styles.css            theme (brown palette, Sri Lankan motifs, animations)
 ├── script.js             UI behaviour, renders catalogue
+├── config.js             where the browser finds the API and Supabase
 ├── api.js                API client (degrades gracefully when offline)
+├── vercel.json           clean URLs, so /admin serves admin.html
+├── package.json          deps + scripts for the whole project
+├── api/
+│   └── [[...path]].js    Vercel entry point — hands /api/* to the Express app
 ├── assets/
 │   ├── hero-veranda.png  hero photograph
 │   └── logo.png          ← YOU NEED TO ADD THIS (see below)
@@ -18,8 +24,11 @@ carnage-replica/
 │   ├── 04_storage.sql    media bucket + storage policies
 │   └── setup_all.sql     all four concatenated, for one-shot setup
 └── server/
-    ├── index.js          Express API
+    ├── app.js            the Express app — every route lives here
+    ├── index.js          local dev listener (production uses api/ instead)
+    ├── admin.js          /api/admin routes
     ├── db.js             Supabase clients
+    ├── env.js            loads server/.env whatever the working directory
     └── .env.example      copy to .env
 ```
 
@@ -115,14 +124,15 @@ It raises distinct error codes the API maps to HTTP:
 ## 3. API server
 
 ```bash
-cd server
-npm install
-npm start
+npm install      # from the repo root — there is one package.json now
+npm start        # API on :8787
+npm run serve    # storefront on :4321, in another terminal
 ```
 
 `server/.env` is already populated with this project's URL and keys. On a fresh
-clone, `cp .env.example .env` and fill it from Supabase → Project Settings →
-API.
+clone, `cp server/.env.example server/.env` and fill it from Supabase → Project
+Settings → API. `server/env.js` loads it by absolute path, so the scripts work
+from any directory.
 
 > `SUPABASE_SERVICE_ROLE_KEY` bypasses RLS. Server-side only — never ship it to
 > the browser. `.gitignore` already excludes `.env`.
@@ -174,7 +184,7 @@ The master admin account already exists and is linked in `site_admins`. To add
 another, or to reset the password on this one:
 
 ```bash
-cd carnage-replica/server && npm run create-admin
+npm run create-admin
 ```
 
 It prompts for the email and password (hidden as you type), creates the
@@ -238,7 +248,51 @@ The page renders its built-in catalogue immediately, then calls
 rails and `<html>` gets `.api-live`. If not, the built-in data stays and the
 site keeps working. **The backend is optional for the page to run.**
 
-Point the client elsewhere by setting `window.CHIC_API_BASE` before `api.js`.
+Point the client elsewhere by setting `window.CHIC_API_BASE` before `config.js`
+— an explicit value always wins over the automatic one.
+
+---
+
+## 6. Deployment (Vercel)
+
+The storefront and the API deploy together, from the same repo, to the same
+origin. No build step: Vercel serves the repo root as static files and turns
+`api/[[...path]].js` into one serverless function that handles every `/api/*`
+request.
+
+Three pieces make that work, and each is load-bearing:
+
+| | |
+|---|---|
+| `api/[[...path]].js` | The optional-catch-all filename is deliberate. It leaves the full path on `req.url`, so the routes in `server/app.js` (`/api/products`, `/api/cart/:id`) keep matching. A plain `api/index.js` would deliver `/api` instead and every route would 404. |
+| `vercel.json` | `cleanUrls: true` is why `/admin` serves `admin.html`. Without it that URL 404s. |
+| `config.js` | Resolves the API base to `''` (same origin) anywhere but localhost. Same origin also means CORS never comes into it. |
+
+Set these in **Project Settings → Environment Variables**:
+
+```
+SUPABASE_URL
+SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+CORS_ORIGIN                  # your deployed origin; same-origin needs no entry
+```
+
+> `SUPABASE_SERVICE_ROLE_KEY` bypasses RLS. It belongs in the environment only —
+> never in `config.js` or any file the browser downloads.
+
+`server/app.js` sets `trust proxy` to 1. Behind Vercel's edge every request
+otherwise appears to come from the same address, and the rate limiter would
+treat all visitors as one client and throttle the whole site.
+
+After deploying, check `/api/health` returns `{"ok":true,"db":"ok"}` and that
+`/admin` loads the panel.
+
+### The rate limiter is best-effort in production
+
+`express-rate-limit` keeps its counters in memory. Serverless instances come and
+go and don't share state, so the 30/min budget is per-instance rather than
+global. It still blunts a naive flood; it is not a real defence. Moving the
+counters into Postgres or Upstash is the fix if that day comes.
 
 ---
 

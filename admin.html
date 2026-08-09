@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin · Chic Colombo</title>
+<meta name="robots" content="noindex, nofollow">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<!-- ============ SIGN IN ============ -->
+<div class="gate" id="gate">
+  <form class="gate__card" id="loginForm">
+    <h1>Chic Colombo</h1>
+    <p class="gate__sub">Admin panel</p>
+
+    <label for="email">Email</label>
+    <input type="email" id="email" autocomplete="username" required>
+
+    <label for="password">Password</label>
+    <input type="password" id="password" autocomplete="current-password" required>
+
+    <button type="submit" class="btn btn--primary" id="loginBtn">Sign in</button>
+    <p class="gate__msg" id="gateMsg" role="status"></p>
+
+    <p class="gate__hint">
+      Accounts are created in Supabase → Authentication. Your address must also
+      appear in the <code>site_admins</code> table.
+    </p>
+  </form>
+</div>
+
+<!-- ============ PANEL ============ -->
+<div class="shell" id="shell" hidden>
+
+  <aside class="side">
+    <div class="side__brand">
+      <strong>Chic Colombo</strong>
+      <span>Admin</span>
+    </div>
+
+    <nav class="side__nav" id="nav">
+      <button class="side__link is-active" data-view="overview">Overview</button>
+      <button class="side__link" data-view="products">Products &amp; stock</button>
+      <button class="side__link" data-view="slides">Hero slider</button>
+      <button class="side__link" data-view="orders">Orders</button>
+      <button class="side__link" data-view="contact">Contact &amp; social</button>
+      <button class="side__link" data-view="subscribers">Subscribers</button>
+    </nav>
+
+    <div class="side__foot">
+      <span id="whoami"></span>
+      <button class="linkish" id="signOut">Sign out</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <!-- ---------- OVERVIEW ---------- -->
+    <section class="view is-active" data-view="overview">
+      <h2>Overview</h2>
+      <div class="stats" id="stats"></div>
+      <h3>Low stock</h3>
+      <div class="tablewrap"><table class="table" id="lowStock"></table></div>
+    </section>
+
+    <!-- ---------- PRODUCTS ---------- -->
+    <section class="view" data-view="products">
+      <div class="view__head">
+        <h2>Products &amp; stock</h2>
+        <button class="btn btn--primary" id="newProduct">New product</button>
+      </div>
+      <div id="productList" class="stack"></div>
+    </section>
+
+    <!-- ---------- SLIDES ---------- -->
+    <section class="view" data-view="slides">
+      <div class="view__head">
+        <h2>Hero slider</h2>
+        <button class="btn btn--primary" id="newSlide">Add slide</button>
+      </div>
+      <p class="hint">
+        Slides play in order. A video slide holds until its clip ends; image
+        slides advance after 6 seconds. Paths are relative to the site root
+        (e.g. <code>assets/hero-veranda.png</code>) or a full URL.
+      </p>
+      <div id="slideList" class="stack"></div>
+    </section>
+
+    <!-- ---------- ORDERS ---------- -->
+    <section class="view" data-view="orders">
+      <div class="view__head">
+        <h2>Orders</h2>
+        <select id="orderFilter" class="input input--slim">
+          <option value="">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="paid">Paid</option>
+          <option value="fulfilled">Fulfilled</option>
+          <option value="cancelled">Cancelled</option>
+          <option value="refunded">Refunded</option>
+        </select>
+      </div>
+      <div class="tablewrap"><table class="table" id="orderTable"></table></div>
+    </section>
+
+    <!-- ---------- CONTACT & SOCIAL ---------- -->
+    <section class="view" data-view="contact">
+      <h2>Contact &amp; social</h2>
+
+      <form class="card" id="settingsForm">
+        <h3>Business details</h3>
+        <div class="grid2">
+          <label>Brand name <input class="input" name="brand_name"></label>
+          <label>Tagline <input class="input" name="tagline"></label>
+          <label>Contact email <input class="input" type="email" name="contact_email"></label>
+          <label>Support email <input class="input" type="email" name="support_email"></label>
+          <label>Phone <input class="input" name="contact_phone"></label>
+          <label>WhatsApp <input class="input" name="whatsapp_number"></label>
+          <label>Hotline <input class="input" name="hotline"></label>
+          <label>Google Maps URL <input class="input" name="google_maps_url"></label>
+          <label>Address line 1 <input class="input" name="address_line1"></label>
+          <label>Address line 2 <input class="input" name="address_line2"></label>
+          <label>City <input class="input" name="city"></label>
+          <label>Footer note <input class="input" name="footer_note"></label>
+        </div>
+
+        <h3>Shipping</h3>
+        <div class="grid2">
+          <label>Free shipping over (LKR)
+            <input class="input" type="number" min="0" step="0.01" name="free_shipping_threshold"></label>
+          <label>Flat rate (LKR)
+            <input class="input" type="number" min="0" step="0.01" name="flat_shipping"></label>
+        </div>
+
+        <h3>Announcement bar</h3>
+        <label class="block">One line per message
+          <textarea class="input" name="announcements" rows="4"></textarea></label>
+
+        <button type="submit" class="btn btn--primary">Save settings</button>
+      </form>
+
+      <div class="card">
+        <div class="view__head">
+          <h3>Social links</h3>
+          <button class="btn" id="newSocial">Add link</button>
+        </div>
+        <div id="socialList" class="stack"></div>
+      </div>
+    </section>
+
+    <!-- ---------- SUBSCRIBERS ---------- -->
+    <section class="view" data-view="subscribers">
+      <div class="view__head">
+        <h2>Subscribers</h2>
+        <button class="btn" id="exportSubs">Export CSV</button>
+      </div>
+      <div class="tablewrap"><table class="table" id="subTable"></table></div>
+    </section>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

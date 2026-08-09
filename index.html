@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chic Colombo | Premium Apparel from Sri Lanka</title>
+<meta name="description" content="Premium apparel made in Sri Lanka. Island-made essentials for men and women.">
+<meta name="theme-color" content="#8A5626">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Baloo+2:wght@700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<!-- ============ ANNOUNCEMENT ============ -->
+<div class="announce">
+  <div class="announce__track" id="announceTrack"></div>
+</div>
+
+<!-- ============ HEADER ============ -->
+<header class="header" id="header">
+  <div class="header__inner">
+
+    <button class="burger" id="burger" aria-label="Menu" aria-expanded="false">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+        <path d="M1 4h18M1 10h18M1 16h18"/>
+      </svg>
+    </button>
+
+    <a href="#" class="logo" aria-label="Chic Colombo home">
+      <!-- Real brand logo. Drop assets/logo.png in and script.js swaps it in,
+           hiding the SVG stand-in below. -->
+      <img class="logo__img" alt="Chic Colombo" hidden>
+
+      <!-- SVG stand-in — approximation, replaced as soon as logo.png exists -->
+      <svg class="logo__mark" viewBox="0 0 300 150" aria-hidden="true">
+        <path d="M22 96C2 88-8 68-3 48c4-12 15-18 22-13 6 4 4 13-3 15-5 2-8 7-6 12 3 9 9 15 18 19z"/>
+        <ellipse cx="62" cy="86" rx="36" ry="31"/>
+        <ellipse cx="150" cy="84" rx="42" ry="27"/>
+        <rect x="58" y="60" width="98" height="49" rx="24"/>
+        <path d="M178 70c9-7 18-15 27-19l9 16c-7 4-14 9-20 17z"/>
+        <ellipse cx="222" cy="58" rx="25" ry="19"/>
+        <path d="M237 65c11-2 20 1 24 6 3 6-2 11-11 12-8 1-15-3-18-8z"/>
+        <path d="M204 46c-3-10-1-17 4-18 4-2 9 3 11 12z"/>
+        <path d="M231 42c1-10 5-15 9-15 5 1 8 6 6 15z"/>
+        <path d="M42 106h15l-3 34c0 5-3 8-7 8s-8-3-8-8z"/>
+        <path d="M76 108h15l-3 32c0 5-3 8-7 8s-8-3-8-8z"/>
+        <path d="M134 106h15l-3 34c0 5-3 8-7 8s-8-3-8-8z"/>
+        <path d="M168 104h15l-3 36c0 5-3 8-7 8s-8-3-8-8z"/>
+      </svg>
+      <span class="logo__type">
+        <svg viewBox="0 0 240 34" aria-hidden="true">
+          <text x="0" y="16" font-size="16">chic</text>
+          <text x="0" y="32" font-size="16">colombo</text>
+        </svg>
+      </span>
+    </a>
+
+    <nav class="nav" aria-label="Primary">
+      <a href="#" class="nav__link" data-mega="women">WOMEN</a>
+      <a href="#" class="nav__link" data-mega="men">MEN</a>
+      <a href="#" class="nav__link" data-mega="acc">ACCESSORIES</a>
+      <a href="#" class="nav__link">GIFT CARDS</a>
+    </nav>
+
+    <div class="header__actions">
+      <button class="iconbtn" id="searchBtn" aria-label="Search">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+          <circle cx="9" cy="9" r="6"/><path d="M17 17l-3.5-3.5"/>
+        </svg>
+      </button>
+      <button class="iconbtn" id="cartBtn" aria-label="Cart">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+          <path d="M4 6h12l-1 12H5L4 6z"/><path d="M7 6V4.5a3 3 0 0 1 6 0V6"/>
+        </svg>
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+    </div>
+
+  </div>
+
+  <div class="mega" id="mega">
+    <div class="mega__inner">
+      <div class="mega__cols">
+        <div class="mega__col">
+          <h4>SHOP BY CATEGORY</h4>
+          <a href="#">Tees</a><a href="#">Linen Shirts</a><a href="#">Sarong Shorts</a>
+          <a href="#">Cargo Trousers</a><a href="#">Knitwear</a><a href="#">Swim</a>
+        </div>
+        <div class="mega__col">
+          <h4>SHOP BY DESTINATION</h4>
+          <a href="#">Galle Face</a><a href="#">Cinnamon Gardens</a><a href="#">Arugam Bay</a>
+          <a href="#">Ella</a><a href="#">Mirissa</a><a href="#">Pettah</a>
+        </div>
+        <div class="mega__col">
+          <h4>FEATURED</h4>
+          <a href="#">New Arrivals</a><a href="#">The Leopard Capsule</a>
+          <a href="#">Batik Edit</a><a href="#">Shop All</a>
+        </div>
+      </div>
+      <div class="mega__promos">
+        <a class="mega__promo" href="#"><span class="ph ph--p1"></span><em>THE LEOPARD CAPSULE</em></a>
+        <a class="mega__promo" href="#"><span class="ph ph--p2"></span><em>BATIK EDIT</em></a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="drawer" id="drawer" aria-hidden="true">
+  <div class="drawer__panel">
+    <button class="drawer__close" id="drawerClose" aria-label="Close menu">&times;</button>
+    <a href="#">WOMEN</a>
+    <a href="#">MEN</a>
+    <a href="#">ACCESSORIES</a>
+    <a href="#">GIFT CARDS</a>
+    <a href="#" class="drawer__sub">New Arrivals</a>
+    <a href="#" class="drawer__sub">The Leopard Capsule</a>
+    <a href="#" class="drawer__sub">Batik Edit</a>
+    <a href="#" class="drawer__sub">Account</a>
+  </div>
+</div>
+<div class="scrim" id="scrim"></div>
+
+<main id="main">
+
+  <!-- ============ HERO SLIDER ============
+       Slides are built by script.js from /api/slides, falling back to the
+       defaults in DEFAULT_SLIDES. Each slide is an image or a video. -->
+  <section class="hero" id="hero" aria-roledescription="carousel" aria-label="Featured">
+    <div class="hero__slides" id="heroSlides"></div>
+    <div class="hero__shade" aria-hidden="true"></div>
+
+    <button class="hero__nav hero__nav--prev" id="heroPrev" aria-label="Previous slide">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+           stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <button class="hero__nav hero__nav--next" id="heroNext" aria-label="Next slide">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+           stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+    </button>
+
+    <div class="hero__bar">
+      <div class="hero__dots" id="heroDots" role="tablist" aria-label="Choose slide"></div>
+      <button class="hero__toggle" id="heroToggle" aria-label="Pause slideshow" aria-pressed="true">
+        <svg class="i-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+        <svg class="i-play" viewBox="0 0 24 24" fill="currentColor" hidden><path d="M8 5l11 7-11 7z"/></svg>
+      </button>
+    </div>
+
+    <div class="hero__cue" aria-hidden="true"><span></span></div>
+  </section>
+
+  <!-- ============ LATEST ============ -->
+  <section class="section">
+    <div class="wrap">
+      <p class="eyebrow">Just landed</p>
+      <div class="section__head">
+        <h2 class="section__title">SHOP THE LATEST STYLES</h2>
+        <div class="section__tools">
+          <a href="#" class="link-all">SHOP ALL</a>
+          <div class="arrows" data-rail="latestRail"></div>
+        </div>
+      </div>
+      <div class="rail" id="latestRail"></div>
+    </div>
+  </section>
+
+  <!-- ============ BRAND FILM ============
+       Kept at native 16:9 at every width. The wide shots place the seated
+       figure hard against the right edge, so a mobile centre-crop would cut
+       him out — mobile goes full-bleed instead of cropping. -->
+  <section class="film" aria-labelledby="filmTitle">
+    <div class="wrap film__wrap">
+      <p class="eyebrow">The film</p>
+      <h2 class="section__title" id="filmTitle">AN EVENING IN THE DRY ZONE</h2>
+
+      <div class="film__frame">
+        <video
+          class="film__video"
+          id="brandFilm"
+          poster="assets/video-poster.jpg"
+          preload="metadata"
+          muted
+          loop
+          playsinline
+          disablepictureinpicture
+          aria-label="Chic Colombo brand film">
+          <source src="assets/brand-film.mp4" type="video/mp4">
+          Your browser can't play this video.
+          <a href="assets/brand-film.mp4">Download it instead.</a>
+        </video>
+
+        <div class="film__controls">
+          <button class="film__btn" id="filmPlay" aria-label="Pause video" aria-pressed="true">
+            <svg class="i-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+            <svg class="i-play" viewBox="0 0 24 24" fill="currentColor" hidden><path d="M8 5l11 7-11 7z"/></svg>
+          </button>
+          <button class="film__btn" id="filmSound" aria-label="Unmute video" aria-pressed="false">
+            <svg class="i-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" stroke="none"/><path d="M17 9l4 6M21 9l-4 6"/></svg>
+            <svg class="i-loud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" hidden><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" stroke="none"/><path d="M17 8.5a5 5 0 0 1 0 7M20 6a9 9 0 0 1 0 12"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PROMO — LINEN ============ -->
+  <section class="promo promo--tall">
+    <div class="promo__media ph ph--denim" aria-hidden="true"></div>
+    <div class="promo__shade" aria-hidden="true"></div>
+    <div class="wrap promo__wrap">
+      <div class="promo__content">
+        <h2 class="promo__title">The Linen Collection</h2>
+        <p class="promo__sub">Cut for the monsoon and the midday sun. Built for comfort, styled for every day.</p>
+        <a href="#" class="btn btn--light">SHOP NOW</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CATEGORY — WOMENS ============ -->
+  <section class="section">
+    <div class="wrap">
+      <p class="eyebrow">Build your style</p>
+      <div class="section__head">
+        <h2 class="section__title">SHOP BY CATEGORY</h2>
+        <div class="section__tools">
+          <a href="#" class="link-all">SHOP ALL</a>
+          <div class="arrows" data-rail="womensCatRail"></div>
+        </div>
+      </div>
+      <div class="rail rail--cat" id="womensCatRail">
+        <a class="tile" href="#"><span class="ph ph--c1"></span><h3>Linen Sets</h3></a>
+        <a class="tile" href="#"><span class="ph ph--c2"></span><h3>Trousers</h3></a>
+        <a class="tile" href="#"><span class="ph ph--c3"></span><h3>Crop Tops</h3></a>
+        <a class="tile" href="#"><span class="ph ph--c4"></span><h3>Tshirts</h3></a>
+        <a class="tile" href="#"><span class="ph ph--c5"></span><h3>Sarongs</h3></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ISLAND STRIP ============ -->
+  <section class="island" id="island">
+    <div class="wrap island__inner">
+      <h2 class="island__title">Cut &amp; sewn in Colombo</h2>
+      <p class="island__sub">Every piece is made a short drive from the Indian Ocean, by makers we know by name.</p>
+      <nav class="island__places" aria-label="Shop by destination">
+        <a href="#">GALLE FACE</a>
+        <a href="#">CINNAMON GARDENS</a>
+        <a href="#">PETTAH</a>
+        <a href="#">ARUGAM BAY</a>
+        <a href="#">MIRISSA</a>
+        <a href="#">ELLA</a>
+      </nav>
+      <div class="island__leopard" aria-hidden="true">
+        <svg viewBox="0 0 300 150">
+          <path d="M22 96C2 88-8 68-3 48c4-12 15-18 22-13 6 4 4 13-3 15-5 2-8 7-6 12 3 9 9 15 18 19z"/>
+          <ellipse cx="62" cy="86" rx="36" ry="31"/>
+          <ellipse cx="150" cy="84" rx="42" ry="27"/>
+          <rect x="58" y="60" width="98" height="49" rx="24"/>
+          <path d="M178 70c9-7 18-15 27-19l9 16c-7 4-14 9-20 17z"/>
+          <ellipse cx="222" cy="58" rx="25" ry="19"/>
+          <path d="M237 65c11-2 20 1 24 6 3 6-2 11-11 12-8 1-15-3-18-8z"/>
+          <path d="M204 46c-3-10-1-17 4-18 4-2 9 3 11 12z"/>
+          <path d="M231 42c1-10 5-15 9-15 5 1 8 6 6 15z"/>
+          <path d="M42 106h15l-3 34c0 5-3 8-7 8s-8-3-8-8z"/>
+          <path d="M76 108h15l-3 32c0 5-3 8-7 8s-8-3-8-8z"/>
+          <path d="M134 106h15l-3 34c0 5-3 8-7 8s-8-3-8-8z"/>
+          <path d="M168 104h15l-3 36c0 5-3 8-7 8s-8-3-8-8z"/>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CATEGORY — MENS ============ -->
+  <section class="section">
+    <div class="wrap">
+      <p class="eyebrow">Build your style</p>
+      <div class="section__head">
+        <h2 class="section__title">SHOP BY CATEGORY</h2>
+        <div class="section__tools">
+          <a href="#" class="link-all">SHOP ALL</a>
+          <div class="arrows" data-rail="mensCatRail"></div>
+        </div>
+      </div>
+      <div class="rail rail--cat" id="mensCatRail">
+        <a class="tile" href="#"><span class="ph ph--m1"></span><h3>Tshirts</h3></a>
+        <a class="tile" href="#"><span class="ph ph--m2"></span><h3>Trousers</h3></a>
+        <a class="tile" href="#"><span class="ph ph--m3"></span><h3>Linen Shirts</h3></a>
+        <a class="tile" href="#"><span class="ph ph--m4"></span><h3>Shorts</h3></a>
+        <a class="tile" href="#"><span class="ph ph--m5"></span><h3>Polos</h3></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SHOP BY DESTINATION ============ -->
+  <section class="section">
+    <div class="wrap">
+      <p class="eyebrow">Where you're headed</p>
+      <div class="section__head">
+        <h2 class="section__title">SHOP BY DESTINATION</h2>
+        <div class="tabs" id="activityTabs">
+          <button class="tab is-active" data-tab="mens">MENS</button>
+          <button class="tab" data-tab="womens">WOMENS</button>
+        </div>
+      </div>
+      <div class="grid grid--cat4" id="activityGrid"></div>
+    </div>
+  </section>
+
+  <!-- ============ PROMO — LEOPARD CAPSULE ============ -->
+  <section class="promo promo--short">
+    <div class="promo__media ph ph--shoes" aria-hidden="true"></div>
+    <div class="promo__shade" aria-hidden="true"></div>
+    <div class="wrap promo__wrap">
+      <div class="promo__content">
+        <h2 class="promo__title">The Leopard Capsule</h2>
+        <p class="promo__sub">Our house mark, hand-drawn and screen printed in small runs.</p>
+        <a href="#" class="btn btn--light">SHOP NOW</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ BANNERS ============ -->
+  <section class="section">
+    <div class="wrap">
+      <div class="grid grid--banners">
+        <a class="banner" href="#"><span class="ph ph--b1"></span><em>SHOP WOMENS</em></a>
+        <a class="banner" href="#"><span class="ph ph--b2"></span><em>SHOP MENS</em></a>
+        <a class="banner" href="#"><span class="ph ph--b3"></span><em>SHOP ACCESSORIES</em></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ACCESSORIES ============ -->
+  <section class="section section--last">
+    <div class="wrap">
+      <div class="section__head">
+        <h2 class="section__title">ACCESSORIES</h2>
+        <div class="section__tools">
+          <a href="#" class="link-all">SHOP ALL</a>
+          <div class="arrows" data-rail="accRail"></div>
+        </div>
+      </div>
+      <div class="rail" id="accRail"></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="footer">
+
+  <div class="footer__logo" aria-hidden="true">
+    <img class="footer__logo-img" alt="" hidden>
+    <svg viewBox="0 0 420 400">
+      <g fill="currentColor">
+        <path d="M196 300c-4-52-6-96-2-140l14 1c-4 44-3 88 1 140z"/>
+        <path d="M204 158c-26-30-62-46-98-44 30-14 74-4 98 30z"/>
+        <path d="M204 158c26-30 62-46 98-44-30-14-74-4-98 30z"/>
+        <path d="M204 156c-14-34-42-60-76-70 34-4 68 26 78 66z"/>
+        <path d="M204 156c14-34 42-60 76-70-34-4-68 26-78 66z"/>
+        <path d="M204 154c2-32-6-64-24-88 26 12 38 52 32 88z"/>
+        <path d="M204 154c-2-32 6-64 24-88-26 12-38 52-32 88z"/>
+        <circle cx="204" cy="160" r="9"/>
+        <g transform="translate(96 232)">
+          <path d="M6 42C-16 34-28 12-22-10c4-14 16-20 24-14 6 5 4 14-3 16-6 2-9 8-7 14 3 10 10 17 20 21z"/>
+          <ellipse cx="46" cy="46" rx="40" ry="34"/>
+          <ellipse cx="140" cy="44" rx="46" ry="30"/>
+          <rect x="42" y="18" width="106" height="54" rx="26"/>
+          <path d="M170 30c10-8 20-16 30-20l10 18c-8 4-16 10-22 18z"/>
+          <ellipse cx="216" cy="16" rx="27" ry="21"/>
+          <path d="M232 24c12-2 22 1 26 7 3 6-2 12-12 13-9 1-17-3-20-9z"/>
+          <path d="M196 2c-3-11-1-18 4-20 5-2 10 3 12 13z"/>
+          <path d="M226-2c1-11 5-17 10-17 5 1 8 7 6 17z"/>
+          <path d="M26 66h17l-3 52c0 6-3 9-8 9s-9-3-9-9z"/>
+          <path d="M62 68h17l-4 50c0 6-3 9-8 9s-8-3-8-9z"/>
+          <path d="M124 66h17l-3 52c0 6-3 9-8 9s-9-3-9-9z"/>
+          <path d="M162 64h17l-3 54c0 6-3 9-8 9s-9-3-9-9z"/>
+          <rect x="20" y="118" width="26" height="12" rx="6"/>
+          <rect x="56" y="118" width="26" height="12" rx="6"/>
+          <rect x="118" y="118" width="26" height="12" rx="6"/>
+          <rect x="156" y="118" width="26" height="12" rx="6"/>
+        </g>
+      </g>
+      <text x="210" y="352" text-anchor="middle" fill="currentColor"
+            font-family="Baloo 2, Inter, sans-serif" font-size="52" font-weight="800">chic colombo</text>
+      <text x="210" y="382" text-anchor="middle" fill="currentColor" opacity=".75"
+            font-size="15" letter-spacing="5">PREMIUM APPAREL</text>
+    </svg>
+  </div>
+
+  <div class="wrap">
+    <div class="footer__main">
+
+      <div class="footer__newsletter">
+        <h3>Sign up now</h3>
+        <p>Notifications you won't want to ignore.</p>
+        <form class="signup" id="signupForm" novalidate>
+          <input type="email" id="signupEmail" placeholder="Email address" aria-label="Email address" required>
+          <button type="submit">Sign up</button>
+        </form>
+        <p class="signup__msg" id="signupMsg" role="status"></p>
+      </div>
+
+      <div class="footer__menus">
+        <div class="footer__column">
+          <h4>Shop</h4>
+          <a href="#">Men</a><a href="#">Women</a><a href="#">Accessories</a>
+          <a href="#">Gifts</a><a href="#">Last Chance</a>
+        </div>
+        <div class="footer__column">
+          <h4>Information</h4>
+          <a href="#">Our Makers</a><a href="#">FAQ</a><a href="#">Size Guide</a>
+          <a href="#">Returns &amp; Exchanges</a><a href="#">Shipping Policy</a><a href="#">Contact Us</a>
+        </div>
+        <div class="footer__column">
+          <h4>Follow</h4>
+          <a href="#">Instagram</a><a href="#">TikTok</a><a href="#">Facebook</a><a href="#">YouTube</a>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="footer__bottom">
+      <p>COLOMBO, SRI LANKA</p>
+      <p>&copy; <span id="year"></span> Chic Colombo</p>
+    </div>
+  </div>
+</footer>
+
+<!-- ============ CART DRAWER ============ -->
+<aside class="cart" id="cart" aria-hidden="true" aria-label="Cart">
+  <div class="cart__head">
+    <h3>CART</h3>
+    <button id="cartClose" aria-label="Close cart">&times;</button>
+  </div>
+  <div class="cart__body" id="cartBody">
+    <p class="cart__empty">Your cart is empty.</p>
+  </div>
+  <div class="cart__foot">
+    <div class="cart__row"><span>Subtotal</span><strong id="cartTotal">LKR 0.00</strong></div>
+    <button class="btn btn--full">CHECKOUT</button>
+  </div>
+</aside>
+
+<script src="api.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

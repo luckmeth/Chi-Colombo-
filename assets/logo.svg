@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 400" role="img" aria-label="Chic Colombo — Premium Apparel">
+  <title>Chic Colombo</title>
+  <g fill="#F0E4D0">
+
+    <!-- palm tree -->
+    <g>
+      <path d="M196 300c-4-52-6-96-2-140l14 1c-4 44-3 88 1 140z"/>
+      <path d="M204 158c-26-30-62-46-98-44 30-14 74-4 98 30z"/>
+      <path d="M204 158c26-30 62-46 98-44-30-14-74-4-98 30z"/>
+      <path d="M204 156c-14-34-42-60-76-70 34-4 68 26 78 66z"/>
+      <path d="M204 156c14-34 42-60 76-70-34-4-68 26-78 66z"/>
+      <path d="M204 154c2-32-6-64-24-88 26 12 38 52 32 88z"/>
+      <path d="M204 154c-2-32 6-64 24-88-26 12-38 52-32 88z"/>
+      <circle cx="204" cy="160" r="9"/>
+    </g>
+
+    <!-- walking leopard -->
+    <g transform="translate(96 232)">
+      <!-- tail -->
+      <path d="M6 42C-16 34-28 12-22-10c4-14 16-20 24-14 6 5 4 14-3 16-6 2-9 8-7 14 3 10 10 17 20 21z"/>
+      <!-- body, haunch and shoulder -->
+      <ellipse cx="46" cy="46" rx="40" ry="34"/>
+      <ellipse cx="140" cy="44" rx="46" ry="30"/>
+      <rect x="42" y="18" width="106" height="54" rx="26"/>
+      <!-- neck and head -->
+      <path d="M170 30c10-8 20-16 30-20l10 18c-8 4-16 10-22 18z"/>
+      <ellipse cx="216" cy="16" rx="27" ry="21"/>
+      <path d="M232 24c12-2 22 1 26 7 3 6-2 12-12 13-9 1-17-3-20-9z"/>
+      <path d="M196 2c-3-11-1-18 4-20 5-2 10 3 12 13z"/>
+      <path d="M226-2c1-11 5-17 10-17 5 1 8 7 6 17z"/>
+      <!-- legs -->
+      <path d="M26 66h17l-3 52c0 6-3 9-8 9s-9-3-9-9z"/>
+      <path d="M62 68h17l-4 50c0 6-3 9-8 9s-8-3-8-9z"/>
+      <path d="M124 66h17l-3 52c0 6-3 9-8 9s-9-3-9-9z"/>
+      <path d="M162 64h17l-3 54c0 6-3 9-8 9s-9-3-9-9z"/>
+      <!-- paws -->
+      <rect x="20" y="118" width="26" height="12" rx="6"/>
+      <rect x="56" y="118" width="26" height="12" rx="6"/>
+      <rect x="118" y="118" width="26" height="12" rx="6"/>
+      <rect x="156" y="118" width="26" height="12" rx="6"/>
+    </g>
+  </g>
+
+  <!-- spots -->
+  <g fill="#8A5626">
+    <ellipse cx="150" cy="258" rx="7" ry="5"/>
+    <ellipse cx="176" cy="248" rx="6" ry="4"/>
+    <ellipse cx="202" cy="256" rx="7" ry="5"/>
+    <ellipse cx="228" cy="246" rx="6" ry="4"/>
+    <ellipse cx="164" cy="282" rx="6" ry="4"/>
+    <ellipse cx="192" cy="288" rx="7" ry="5"/>
+    <ellipse cx="220" cy="278" rx="6" ry="4"/>
+    <ellipse cx="246" cy="266" rx="6" ry="4"/>
+    <ellipse cx="126" cy="272" rx="6" ry="4"/>
+    <ellipse cx="262" cy="288" rx="5" ry="4"/>
+  </g>
+</svg>

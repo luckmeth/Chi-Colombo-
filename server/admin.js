@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { randomUUID } from 'node:crypto';
 import { admin, currentUser } from './db.js';
 
 export const adminRouter = Router();
@@ -99,7 +100,7 @@ const PRODUCT_FIELDS = ['handle', 'title', 'description', 'status', 'audience',
 adminRouter.get('/products', route(async (_req, res) => {
   const { data, error } = await admin
     .from('products')
-    .select('*, product_variants(*)')
+    .select('*, product_variants(*), product_images(*)')
     .order('position');
 
   if (error) return fail(res, 500, 'Could not load products', error.message);
@@ -217,6 +218,188 @@ adminRouter.post('/variants/:id/stock', route(async (req, res) => {
 }));
 
 /* ---------------------------------------------------------
+   Media uploads
+
+   The browser never posts file bytes through this server. It asks for a
+   signed upload URL, then PUTs straight to Supabase Storage. A hero video
+   can be tens of megabytes, and streaming that through Express would mean
+   buffering the whole thing in this process's memory for no benefit.
+
+   The signed URL is single-use, scoped to one exact object path, and the
+   path is chosen here — the client cannot pick where its bytes land.
+   --------------------------------------------------------- */
+
+const BUCKET = 'media';
+
+/* Mirrors the bucket's allow-list in 04_storage.sql. Checked here too so a
+   bad type fails with a useful message instead of an opaque Storage error.
+   SVG is excluded on purpose: the bucket is public, and SVG is executable. */
+const MEDIA_TYPES = new Set([
+  'image/png', 'image/jpeg', 'image/webp', 'image/avif', 'image/gif',
+  'video/mp4', 'video/webm', 'video/quicktime'
+]);
+
+/* Free-plan ceiling; the bucket enforces it as well. */
+const MAX_UPLOAD_BYTES = 52428800;
+
+const FOLDERS = new Set(['products', 'hero', 'posters']);
+
+const PUBLIC_PREFIX = `${process.env.SUPABASE_URL}/storage/v1/object/public/${BUCKET}/`;
+
+/** Strips anything that could escape the folder or confuse a URL. */
+function safeName(name) {
+  const cleaned = String(name ?? 'file')
+    .toLowerCase()
+    .replace(/[^a-z0-9.\-_]+/g, '-')
+    .replace(/^[-.]+|[-.]+$/g, '');
+  return cleaned.slice(-80) || 'file';
+}
+
+/** The storage path behind one of our public URLs, or null if it isn't ours. */
+function storagePath(url) {
+  if (typeof url !== 'string' || !url.startsWith(PUBLIC_PREFIX)) return null;
+  const path = url.slice(PUBLIC_PREFIX.length).split(/[?#]/)[0];
+  return path ? decodeURIComponent(path) : null;
+}
+
+/** Best-effort cleanup — a failure here must not fail the caller's request. */
+async function removeObject(url) {
+  const path = storagePath(url);
+  if (!path) return;
+  await admin.storage.from(BUCKET).remove([path]).catch(() => {});
+}
+
+adminRouter.post('/uploads/sign', route(async (req, res) => {
+  const { filename, content_type: contentType, folder = 'products', size } = req.body ?? {};
+
+  if (!MEDIA_TYPES.has(contentType)) {
+    return fail(res, 415, `Unsupported file type${contentType ? `: ${contentType}` : ''}`,
+      'Allowed: PNG, JPEG, WebP, AVIF, GIF, MP4, WebM, MOV');
+  }
+  if (!FOLDERS.has(folder)) return fail(res, 400, 'Unknown folder');
+  if (Number.isFinite(size) && size > MAX_UPLOAD_BYTES) {
+    return fail(res, 413, `File is too large — the limit is ${MAX_UPLOAD_BYTES / 1048576} MB`);
+  }
+
+  /* randomUUID prefix keeps two uploads of "photo.jpg" apart and makes the
+     path unguessable, so the object cannot be overwritten by a second signer */
+  const path = `${folder}/${randomUUID()}-${safeName(filename)}`;
+
+  const { data, error } = await admin.storage.from(BUCKET).createSignedUploadUrl(path);
+  if (error) return fail(res, 500, 'Could not start the upload', error.message);
+
+  const { data: pub } = admin.storage.from(BUCKET).getPublicUrl(path);
+
+  res.json({
+    path,
+    token: data.token,
+    signed_url: data.signedUrl,
+    public_url: pub.publicUrl,
+    bucket: BUCKET
+  });
+}));
+
+/** Drops an uploaded object that no record ended up pointing at. */
+adminRouter.post('/uploads/discard', route(async (req, res) => {
+  const url = req.body?.url;
+  if (!storagePath(url)) return fail(res, 400, 'Not a media URL for this project');
+  await removeObject(url);
+  res.status(204).end();
+}));
+
+/* ---------------------------------------------------------
+   Product images
+   --------------------------------------------------------- */
+
+adminRouter.get('/products/:id/images', route(async (req, res) => {
+  if (!isUuid(req.params.id)) return fail(res, 400, 'Bad product id');
+
+  const { data, error } = await admin
+    .from('product_images').select('*').eq('product_id', req.params.id).order('position');
+
+  if (error) return fail(res, 500, 'Could not load images', error.message);
+  res.json(data);
+}));
+
+adminRouter.post('/products/:id/images', route(async (req, res) => {
+  if (!isUuid(req.params.id)) return fail(res, 400, 'Bad product id');
+
+  const url = req.body?.url;
+  if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) {
+    return fail(res, 400, 'url must be an http(s) URL');
+  }
+
+  /* append: take the next free slot rather than trusting a client-sent
+     position, which would collide with the unique (product_id, position) index */
+  const { data: last } = await admin
+    .from('product_images').select('position')
+    .eq('product_id', req.params.id)
+    .order('position', { ascending: false }).limit(1).maybeSingle();
+
+  const { data, error } = await admin.from('product_images').insert({
+    product_id: req.params.id,
+    url,
+    alt: req.body?.alt ?? null,
+    position: (last?.position ?? -1) + 1
+  }).select().single();
+
+  if (error) return fail(res, 500, 'Could not attach the image', error.message);
+  res.status(201).json(data);
+}));
+
+adminRouter.patch('/images/:id', route(async (req, res) => {
+  if (!isUuid(req.params.id)) return fail(res, 400, 'Bad image id');
+
+  const { data, error } = await admin
+    .from('product_images').update(pick(req.body, ['alt']))
+    .eq('id', req.params.id).select().single();
+
+  if (error) return fail(res, 500, 'Could not update the image', error.message);
+  res.json(data);
+}));
+
+adminRouter.delete('/images/:id', route(async (req, res) => {
+  if (!isUuid(req.params.id)) return fail(res, 400, 'Bad image id');
+
+  const { data: row } = await admin
+    .from('product_images').select('url').eq('id', req.params.id).maybeSingle();
+
+  const { error } = await admin.from('product_images').delete().eq('id', req.params.id);
+  if (error) return fail(res, 500, 'Could not remove the image', error.message);
+
+  /* the row is gone either way; an orphaned object is better than a broken card */
+  if (row?.url) await removeObject(row.url);
+  res.status(204).end();
+}));
+
+adminRouter.post('/products/:id/images/reorder', route(async (req, res) => {
+  if (!isUuid(req.params.id)) return fail(res, 400, 'Bad product id');
+
+  const order = req.body?.order;
+  if (!Array.isArray(order) || !order.length || !order.every(isUuid)) {
+    return fail(res, 400, 'order must be an array of image ids');
+  }
+
+  /* Two passes. (product_id, position) is unique, so writing the final
+     positions directly would collide the moment two images swap places.
+     Negative slots are unused, so the first pass can never conflict. */
+  for (const [i, id] of order.entries()) {
+    await admin.from('product_images')
+      .update({ position: -(i + 1) }).eq('id', id).eq('product_id', req.params.id);
+  }
+  for (const [i, id] of order.entries()) {
+    await admin.from('product_images')
+      .update({ position: i }).eq('id', id).eq('product_id', req.params.id);
+  }
+
+  const { data, error } = await admin
+    .from('product_images').select('*').eq('product_id', req.params.id).order('position');
+
+  if (error) return fail(res, 500, 'Could not reorder images', error.message);
+  res.json(data);
+}));
+
+/* ---------------------------------------------------------
    Hero slides
    --------------------------------------------------------- */
 
@@ -246,17 +429,34 @@ adminRouter.patch('/slides/:id', route(async (req, res) => {
   if (!isUuid(req.params.id)) return fail(res, 400, 'Bad slide id');
   const body = pick(req.body, SLIDE_FIELDS);
 
+  const { data: before } = await admin
+    .from('hero_slides').select('media_url, poster_url').eq('id', req.params.id).maybeSingle();
+
   const { data, error } = await admin
     .from('hero_slides').update(body).eq('id', req.params.id).select().single();
 
   if (error) return fail(res, 500, 'Could not update slide', error.message);
+
+  /* swapping in new media leaves the old object unreferenced — drop it, but
+     only once the row actually points somewhere else */
+  for (const field of ['media_url', 'poster_url']) {
+    if (before?.[field] && data[field] !== before[field]) await removeObject(before[field]);
+  }
+
   res.json(data);
 }));
 
 adminRouter.delete('/slides/:id', route(async (req, res) => {
   if (!isUuid(req.params.id)) return fail(res, 400, 'Bad slide id');
+
+  const { data: row } = await admin
+    .from('hero_slides').select('media_url, poster_url').eq('id', req.params.id).maybeSingle();
+
   const { error } = await admin.from('hero_slides').delete().eq('id', req.params.id);
   if (error) return fail(res, 500, 'Could not delete slide', error.message);
+
+  await removeObject(row?.media_url);
+  await removeObject(row?.poster_url);
   res.status(204).end();
 }));
 

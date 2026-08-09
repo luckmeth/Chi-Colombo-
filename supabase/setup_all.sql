@@ -1,6 +1,6 @@
-﻿-- =========================================================
+-- =========================================================
 -- Chic Colombo — complete setup, generated from:
---   01_schema.sql  02_seed.sql  03_admin.sql
+--   01_schema.sql  02_seed.sql  03_admin.sql  04_storage.sql
 --
 -- Paste this whole file into Supabase -> SQL Editor and Run.
 -- Safe to re-run: every insert is guarded.
@@ -14,7 +14,7 @@
 -- ============================================================
 
 -- =========================================================
--- Chic Colombo â€” storefront schema (Supabase / Postgres)
+-- Chic Colombo — storefront schema (Supabase / Postgres)
 -- Run this first, then 02_seed.sql
 --
 -- Money is stored as integer cents (LKR) to avoid float drift.
@@ -110,7 +110,7 @@ create trigger products_updated_at
   for each row execute function set_updated_at();
 
 -- ---------------------------------------------------------
--- Variants â€” colour / size, each with its own stock
+-- Variants — colour / size, each with its own stock
 -- ---------------------------------------------------------
 create table if not exists product_variants (
   id            uuid primary key default gen_random_uuid(),
@@ -155,7 +155,7 @@ create table if not exists collection_products (
 create index if not exists collection_products_product_idx on collection_products (product_id);
 
 -- ---------------------------------------------------------
--- Customers â€” mirrors auth.users
+-- Customers — mirrors auth.users
 -- ---------------------------------------------------------
 create table if not exists customers (
   id         uuid primary key references auth.users (id) on delete cascade,
@@ -212,7 +212,7 @@ create table if not exists addresses (
 create index if not exists addresses_customer_idx on addresses (customer_id);
 
 -- ---------------------------------------------------------
--- Carts â€” guests use session_token, members use customer_id
+-- Carts — guests use session_token, members use customer_id
 -- ---------------------------------------------------------
 create table if not exists carts (
   id            uuid primary key default gen_random_uuid(),
@@ -300,7 +300,7 @@ create table if not exists newsletter_subscribers (
 );
 
 -- ---------------------------------------------------------
--- Storefront read view â€” one row per product card
+-- Storefront read view — one row per product card
 -- ---------------------------------------------------------
 create or replace view product_cards
 with (security_invoker = true)
@@ -333,7 +333,7 @@ from products p
 where p.status = 'active';
 
 -- ---------------------------------------------------------
--- Checkout â€” one atomic call: validate stock, decrement, write order
+-- Checkout — one atomic call: validate stock, decrement, write order
 -- ---------------------------------------------------------
 create or replace function checkout_cart(
   p_cart_id  uuid,
@@ -525,7 +525,7 @@ create policy "anyone can subscribe" on newsletter_subscribers
 -- ============================================================
 
 -- =========================================================
--- Chic Colombo â€” seed data
+-- Chic Colombo — seed data
 -- Mirrors the catalogue currently hardcoded in script.js.
 -- Safe to re-run: every insert is idempotent on its natural key.
 -- =========================================================
@@ -591,7 +591,7 @@ insert into products (handle, title, audience, price_cents, is_new, position, de
 on conflict (handle) do nothing;
 
 -- ---------------------------------------------------------
--- Variants â€” colourway per product, S/M/L/XL for apparel
+-- Variants — colourway per product, S/M/L/XL for apparel
 -- ---------------------------------------------------------
 with sized as (
   select p.id, p.handle, c.colour_name, c.colour_hex, s.size, s.pos
@@ -689,7 +689,7 @@ end $$;
 -- ============================================================
 
 -- =========================================================
--- Chic Colombo â€” admin, hero slider, site settings
+-- Chic Colombo — admin, hero slider, site settings
 -- Run after 01_schema.sql and 02_seed.sql
 --
 -- Admin gating mirrors the nexabill convention: a site_admins table
@@ -735,7 +735,7 @@ as $$
 $$;
 
 -- ---------------------------------------------------------
--- Hero slides â€” images and videos in one ordered list
+-- Hero slides — images and videos in one ordered list
 -- ---------------------------------------------------------
 do $$ begin
   create type slide_kind as enum ('image', 'video');
@@ -775,7 +775,7 @@ create trigger hero_slides_updated_at
   for each row execute function set_updated_at();
 
 -- ---------------------------------------------------------
--- Site settings â€” single row, edited from the admin panel
+-- Site settings — single row, edited from the admin panel
 -- ---------------------------------------------------------
 create table if not exists app_settings (
   id                text primary key default 'global',
@@ -843,7 +843,7 @@ select * from (values
 where not exists (select 1 from social_links);
 
 -- ---------------------------------------------------------
--- Stock movements â€” an audit trail for every inventory change
+-- Stock movements — an audit trail for every inventory change
 -- ---------------------------------------------------------
 create table if not exists stock_movements (
   id         uuid primary key default gen_random_uuid(),
@@ -990,7 +990,7 @@ insert into hero_slides (kind, media_url, poster_url, eyebrow, title, subtitle,
                          cta_label, cta_href, cta2_label, cta2_href, sort_order)
 select * from (values
   ('image'::slide_kind, 'assets/hero-veranda.png', null::text,
-   'PREMIUM APPAREL Â· MADE IN SRI LANKA', 'Island State of Mind',
+   'PREMIUM APPAREL · MADE IN SRI LANKA', 'Island State of Mind',
    'Made on the island, worn everywhere. Breathable cotton and linen built for the heat.',
    'SHOP MENS', '#', 'SHOP WOMENS', '#', 0),
   ('video'::slide_kind, 'assets/brand-film.mp4', 'assets/video-poster.jpg',
@@ -1000,4 +1000,79 @@ select * from (values
 ) as v(kind, media_url, poster_url, eyebrow, title, subtitle,
        cta_label, cta_href, cta2_label, cta2_href, sort_order)
 where not exists (select 1 from hero_slides);
+
+
+-- ============================================================
+-- SOURCE: 04_storage.sql
+-- ============================================================
+
+-- =========================================================
+-- Chic Colombo — media storage
+-- Run after 03_admin.sql
+--
+-- One public bucket holds every uploaded asset: product photography,
+-- hero stills, hero video and video posters. Public because the
+-- storefront reads these anonymously; writes are admin-only.
+-- =========================================================
+
+-- ---------------------------------------------------------
+-- Bucket
+-- ---------------------------------------------------------
+-- 50 MB is the project-wide ceiling on the free plan, so the bucket
+-- cannot usefully be set higher. The MIME allow-list is the real guard:
+-- it is enforced by Storage itself, before the object is written.
+--
+-- image/svg+xml is deliberately excluded. SVG is executable markup, and
+-- the bucket is world-readable, so an uploaded SVG would be a stored
+-- XSS payload served from the project's own domain.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'media',
+  'media',
+  true,
+  52428800,
+  array[
+    'image/png', 'image/jpeg', 'image/webp', 'image/avif', 'image/gif',
+    'video/mp4', 'video/webm', 'video/quicktime'
+  ]
+)
+on conflict (id) do update
+  set public             = excluded.public,
+      file_size_limit    = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+-- ---------------------------------------------------------
+-- Policies
+-- ---------------------------------------------------------
+-- The API uploads with the service-role key and the browser uploads with a
+-- short-lived signed URL, and both bypass RLS — so these policies are not the
+-- primary path. They exist so that a signed-in admin hitting Storage directly
+-- gets the same permissions, and so anonymous writes are refused if a future
+-- client ever talks to Storage without a signed URL.
+
+drop policy if exists "media public read" on storage.objects;
+create policy "media public read" on storage.objects
+  for select using (bucket_id = 'media');
+
+drop policy if exists "media admin insert" on storage.objects;
+create policy "media admin insert" on storage.objects
+  for insert with check (bucket_id = 'media' and public.is_admin());
+
+drop policy if exists "media admin update" on storage.objects;
+create policy "media admin update" on storage.objects
+  for update using (bucket_id = 'media' and public.is_admin())
+  with check (bucket_id = 'media' and public.is_admin());
+
+drop policy if exists "media admin delete" on storage.objects;
+create policy "media admin delete" on storage.objects
+  for delete using (bucket_id = 'media' and public.is_admin());
+
+-- ---------------------------------------------------------
+-- product_images: keep positions tidy
+-- ---------------------------------------------------------
+-- 01_schema.sql created the table but left position unconstrained. The
+-- storefront reads image 0 as the card front and image 1 as the hover
+-- state, so two images sharing a position makes the card non-deterministic.
+create unique index if not exists product_images_position_idx
+  on product_images (product_id, position);
 

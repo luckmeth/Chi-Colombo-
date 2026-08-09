@@ -60,7 +60,10 @@ const res = await fetch(
     method: 'POST',
     headers: {
       Authorization: `Bearer ${TOKEN}`,
-      'Content-Type': 'application/json'
+      /* charset matters: without it the endpoint decodes the body as latin-1
+         and every non-ASCII character in the SQL is stored double-encoded
+         ("·" becomes "Â·"). */
+      'Content-Type': 'application/json; charset=utf-8'
     },
     body: JSON.stringify({ query: sql })
   }

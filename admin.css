@@ -481,3 +481,59 @@ label.block .input { margin-top: 5px; }
 
   .main { padding: 18px 16px 50px; }
 }
+
+/* ---------------------------------------------------------
+   Payments, content editor, order detail
+   --------------------------------------------------------- */
+
+.chip--warn { background: #F6E7D6; color: var(--warn); }
+
+/* --- content editor --- */
+.editor { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-bottom: 10px; }
+
+.editor__bar { display: flex; flex-wrap: wrap; gap: 4px; padding: 7px; background: var(--paper); border-bottom: 1px solid var(--line); }
+.editor__bar button {
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+}
+.editor__bar button:hover { border-color: var(--brown); color: var(--brown); }
+
+.editor__area { min-height: 260px; max-height: 520px; overflow-y: auto; padding: 16px 18px; background: #fff; font-size: 14px; line-height: 1.7; }
+.editor__area:focus { outline: 2px solid var(--brown); outline-offset: -2px; }
+.editor__area h2 { font-size: 17px; margin: 20px 0 8px; }
+.editor__area h3 { font-size: 15px; margin: 18px 0 6px; }
+.editor__area p { margin: 0 0 12px; }
+.editor__area ul, .editor__area ol { margin: 0 0 12px; padding-left: 22px; }
+.editor__area a { color: var(--brown); text-decoration: underline; }
+
+/* --- order detail --- */
+.orderdetail td { background: var(--paper); padding: 18px 16px; }
+.orderdetail__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 28px; }
+.orderdetail__grid h3 { margin: 0 0 10px; }
+.orderdetail__grid h3:not(:first-child) { margin-top: 24px; }
+.orderdetail .stockline small { display: block; color: var(--muted); font-size: 11px; }
+.orderdetail .cart__row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; }
+.orderdetail .cart__row strong { color: var(--ink); }
+
+.events { list-style: none; padding: 0; margin: 0; }
+.events li { position: relative; padding: 0 0 14px 18px; border-left: 2px solid var(--line); }
+.events li:last-child { border-left-color: transparent; padding-bottom: 0; }
+.events li::before {
+  content: "";
+  position: absolute;
+  left: -6px; top: 3px;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--brown);
+}
+.events strong { font-size: 13px; color: var(--ink); text-transform: capitalize; }
+.events em { font-style: normal; font-size: 11px; color: var(--muted); margin-left: 6px; }
+.events span { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+.block { grid-column: 1 / -1; }

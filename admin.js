@@ -282,6 +282,8 @@
     products: loadProducts,
     slides: loadSlides,
     orders: loadOrders,
+    payments: loadPayments,
+    pages: loadPages,
     contact: loadContact,
     subscribers: loadSubscribers
   };
@@ -776,8 +778,11 @@
 
     const STATUSES = ['pending', 'paid', 'fulfilled', 'cancelled', 'refunded'];
 
+    const PAY_CHIP = { paid: 'chip--ok', failed: 'chip--bad', cancelled: 'chip--bad', chargeback: 'chip--bad' };
+
     $('#orderTable').innerHTML = list.length
-      ? `<thead><tr><th>#</th><th>Placed</th><th>Email</th><th>Items</th><th>Total</th><th>Status</th></tr></thead>
+      ? `<thead><tr><th>#</th><th>Placed</th><th>Email</th><th>Items</th><th>Total</th>
+                <th>Payment</th><th>Status</th><th></th></tr></thead>
          <tbody>${list.map((o) => `
            <tr data-id="${o.id}">
              <td>${o.order_number}</td>
@@ -785,13 +790,93 @@
              <td>${esc(o.email)}</td>
              <td>${(o.order_items ?? []).length}</td>
              <td>${money(o.total_cents)}</td>
+             <td><span class="chip ${PAY_CHIP[o.payment_status] ?? ''}">${esc(o.payment_status ?? 'unpaid')}</span></td>
              <td>
                <select class="input input--slim" data-act="status">
                  ${STATUSES.map((s) => `<option value="${s}" ${o.status === s ? 'selected' : ''}>${s}</option>`).join('')}
                </select>
              </td>
-           </tr>`).join('')}</tbody>`
+             <td><button class="btn btn--slim" data-act="open">Open</button></td>
+           </tr>
+           <tr class="orderdetail" data-detail="${o.id}" hidden><td colspan="8"></td></tr>`).join('')}</tbody>`
       : '<tbody><tr><td class="empty">No orders yet.</td></tr></tbody>';
+  }
+
+  /* ---------- order detail ---------- */
+
+  function orderDetailHTML(o) {
+    const addr = o.shipping_address ?? {};
+    const when = (iso) => new Date(iso).toLocaleString('en-GB',
+      { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+    return `
+      <div class="orderdetail__grid">
+        <div>
+          <h3>Items</h3>
+          ${(o.order_items ?? []).map((i) => `
+            <div class="stockline">
+              <span class="stockline__name">${esc(i.title_snapshot)}
+                <small>${esc(i.variant_snapshot ?? '')}</small></span>
+              <span>× ${i.qty}</span>
+              <span class="stockline__qty">${money(i.line_total_cents)}</span>
+            </div>`).join('') || '<p class="hint">No line items.</p>'}
+
+          <div class="cart__row"><span>Subtotal</span><strong>${money(o.subtotal_cents)}</strong></div>
+          <div class="cart__row"><span>Delivery</span><strong>${money(o.shipping_cents)}</strong></div>
+          <div class="cart__row"><span>Total</span><strong>${money(o.total_cents)}</strong></div>
+
+          <h3>Deliver to</h3>
+          <p class="hint">
+            ${esc(addr.full_name ?? '—')}<br>
+            ${esc(addr.line1 ?? '')}${addr.line2 ? `<br>${esc(addr.line2)}` : ''}<br>
+            ${esc(addr.city ?? '')}${addr.district ? `, ${esc(addr.district)}` : ''}
+            ${addr.postal_code ? ` ${esc(addr.postal_code)}` : ''}<br>
+            ${esc(addr.phone ?? '')}<br>
+            ${esc(o.email)}
+            ${addr.note ? `<br><em>Note: ${esc(addr.note)}</em>` : ''}
+          </p>
+        </div>
+
+        <div>
+          <h3>Shipment</h3>
+          <div class="grid2">
+            <label>Courier <input class="input" data-f="courier" value="${esc(o.courier ?? '')}"></label>
+            <label>Tracking number <input class="input" data-f="tracking_number" value="${esc(o.tracking_number ?? '')}"></label>
+            <label class="block">Tracking URL <input class="input" data-f="tracking_url" value="${esc(o.tracking_url ?? '')}"></label>
+          </div>
+          <button class="btn btn--primary btn--slim" data-act="save-shipment">Save shipment</button>
+          <button class="btn btn--slim btn--danger" data-act="cancel-order">Cancel &amp; restock</button>
+
+          <h3>Timeline</h3>
+          ${(o.events ?? []).length
+            ? `<ol class="events">${o.events.map((e) => `
+                <li><strong>${esc(e.status)}</strong>
+                    <em>${esc(when(e.created_at))}</em>
+                    ${e.note ? `<span>${esc(e.note)}</span>` : ''}</li>`).join('')}</ol>`
+            : '<p class="hint">Nothing recorded yet.</p>'}
+
+          <h3>Payment</h3>
+          <p class="hint">
+            ${esc(o.payment_provider ?? 'none')} · ${esc(o.payment_status ?? 'unpaid')}
+            ${o.payment_ref ? `<br>Reference: ${esc(o.payment_ref)}` : ''}
+            ${o.paid_at ? `<br>Paid ${esc(when(o.paid_at))}` : ''}
+          </p>
+        </div>
+      </div>`;
+  }
+
+  async function toggleOrderDetail(id) {
+    const row = $(`[data-detail="${id}"]`);
+    if (!row) return;
+
+    if (!row.hidden) { row.hidden = true; return; }
+
+    const cell = row.querySelector('td');
+    cell.innerHTML = '<p class="hint">Loading…</p>';
+    row.hidden = false;
+
+    const order = await api(`/api/admin/orders/${id}`);
+    cell.innerHTML = order ? orderDetailHTML(order) : '<p class="hint">Could not load that order.</p>';
   }
 
   $('#orderFilter').addEventListener('change', loadOrders);
@@ -804,7 +889,260 @@
       method: 'PATCH',
       body: JSON.stringify({ status: e.target.value })
     });
-    if (done) toast('Order updated');
+    if (done) {
+      toast(e.target.value === 'cancelled' ? 'Order cancelled and stock returned' : 'Order updated');
+      loadOrders();
+    }
+  });
+
+  $('#orderTable').addEventListener('click', async (e) => {
+    const act = e.target.dataset.act;
+
+    if (act === 'open') {
+      toggleOrderDetail(e.target.closest('tr').dataset.id);
+      return;
+    }
+
+    const detail = e.target.closest('.orderdetail');
+    if (!detail) return;
+    const id = detail.dataset.detail;
+
+    if (act === 'save-shipment') {
+      const get = (f) => $(`[data-f="${f}"]`, detail).value.trim();
+      const saved = await api(`/api/admin/orders/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          courier: get('courier') || null,
+          tracking_number: get('tracking_number') || null,
+          tracking_url: get('tracking_url') || null
+        })
+      });
+      if (saved) { toast('Shipment saved'); toggleOrderDetail(id); toggleOrderDetail(id); }
+      return;
+    }
+
+    if (act === 'cancel-order') {
+      if (!confirm('Cancel this order and return its stock? This cannot be undone.')) return;
+      const done = await api(`/api/admin/orders/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'cancelled' })
+      });
+      if (done) { toast('Order cancelled and stock returned'); loadOrders(); }
+    }
+  });
+
+  /* ---------- payments ---------- */
+
+  async function loadPayments() {
+    const s = await api('/api/admin/payments');
+    if (!s) return;
+
+    const secret = (label, name, state) => `
+      <label>${label}
+        <input class="input" type="password" data-f="${name}" autocomplete="new-password"
+               placeholder="${state.configured ? `Saved ${esc(state.hint)} — leave blank to keep` : 'Not set'}">
+      </label>`;
+
+    $('#paymentPanel').innerHTML = `
+      <form class="card" id="payhereForm">
+        <div class="view__head">
+          <h3>PayHere</h3>
+          <span class="chip ${s.payhere_ready ? 'chip--ok' : 'chip--warn'}">
+            ${s.payhere_ready ? 'live on checkout' : 'not usable yet'}
+          </span>
+        </div>
+        <p class="hint">
+          From your PayHere dashboard → Domains &amp; Credentials. The merchant
+          secret signs every payment, so it stays on the server.
+        </p>
+
+        <div class="grid2">
+          <label>Merchant ID
+            <input class="input" data-f="payhere_merchant_id" value="${esc(s.payhere_merchant_id)}"></label>
+          ${secret('Merchant secret', 'payhere_merchant_secret', s.payhere_merchant_secret)}
+          <label>App ID (optional)
+            <input class="input" data-f="payhere_app_id" value="${esc(s.payhere_app_id)}"></label>
+          ${secret('App secret (optional)', 'payhere_app_secret', s.payhere_app_secret)}
+          <label>Mode
+            <select class="input" data-f="payhere_sandbox">
+              <option value="true" ${s.payhere_sandbox ? 'selected' : ''}>Sandbox (test payments)</option>
+              <option value="false" ${!s.payhere_sandbox ? 'selected' : ''}>Live (real money)</option>
+            </select></label>
+          <label>Offer at checkout
+            <select class="input" data-f="payhere_enabled">
+              <option value="true" ${s.payhere_enabled ? 'selected' : ''}>Yes</option>
+              <option value="false" ${!s.payhere_enabled ? 'selected' : ''}>No</option>
+            </select></label>
+        </div>
+
+        <button class="btn btn--primary" type="submit">Save PayHere</button>
+      </form>
+
+      <form class="card" id="paypalForm">
+        <div class="view__head">
+          <h3>PayPal</h3>
+          <span class="chip chip--warn">unavailable</span>
+        </div>
+        <p class="hint">
+          PayPal does not settle in Sri Lankan Rupees, so it cannot charge a
+          cart priced in LKR. Storing the keys here is safe and they will be
+          used once a currency is decided — most likely charging USD at a rate
+          you set. It stays off the checkout page until then.
+        </p>
+
+        <div class="grid2">
+          <label>Client ID
+            <input class="input" data-f="paypal_client_id" value="${esc(s.paypal_client_id)}"></label>
+          ${secret('Secret', 'paypal_secret', s.paypal_secret)}
+          <label>Mode
+            <select class="input" data-f="paypal_sandbox">
+              <option value="true" ${s.paypal_sandbox ? 'selected' : ''}>Sandbox</option>
+              <option value="false" ${!s.paypal_sandbox ? 'selected' : ''}>Live</option>
+            </select></label>
+        </div>
+
+        <button class="btn btn--primary" type="submit">Save PayPal</button>
+      </form>`;
+  }
+
+  $('#paymentPanel').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const form = e.target.closest('form');
+    const body = {};
+
+    $$('[data-f]', form).forEach((el) => {
+      const value = el.value.trim();
+      /* a blank password field means "keep what is stored" — sending an
+         empty string would look like an instruction to erase it */
+      if (el.type === 'password' && !value) return;
+      body[el.dataset.f] = value === 'true' ? true : value === 'false' ? false : value;
+    });
+
+    const saved = await api('/api/admin/payments', {
+      method: 'PATCH',
+      body: JSON.stringify(body)
+    });
+
+    if (saved) {
+      toast(saved.payhere_ready ? 'Saved — PayHere is live on checkout' : 'Saved');
+      loadPayments();
+    }
+  });
+
+  /* ---------- content pages ---------- */
+
+  async function loadPages() {
+    const list = await api('/api/admin/pages');
+    if (!list) return;
+
+    $('#pageList').innerHTML = list.map((p) => `
+      <article class="row" data-id="${p.id}">
+        <div class="row__head">
+          <span class="row__title">${esc(p.title)}</span>
+          <span class="row__meta">/pages/${esc(p.slug)}</span>
+          <span class="row__spacer"></span>
+          <span class="chip ${p.is_published ? 'chip--ok' : 'chip--bad'}">
+            ${p.is_published ? 'live' : 'hidden'}</span>
+        </div>
+        <div class="row__body">
+          <div class="grid2" style="margin:16px 0">
+            <label>Title <input class="input" data-f="title" value="${esc(p.title)}"></label>
+            <label>Slug <input class="input" data-f="slug" value="${esc(p.slug)}"></label>
+            <label>Visible
+              <select class="input" data-f="is_published">
+                <option value="true" ${p.is_published ? 'selected' : ''}>Live</option>
+                <option value="false" ${!p.is_published ? 'selected' : ''}>Hidden</option>
+              </select></label>
+          </div>
+
+          <div class="editor">
+            <div class="editor__bar">
+              ${[['bold', 'B'], ['italic', 'I'], ['h2', 'H2'], ['h3', 'H3'],
+                 ['ul', 'List'], ['ol', '1. List'], ['link', 'Link'], ['clear', 'Clear']]
+                .map(([cmd, label]) =>
+                  `<button type="button" data-cmd="${cmd}">${label}</button>`).join('')}
+            </div>
+            <div class="editor__area" contenteditable="true" data-f="body_html">${p.body_html}</div>
+          </div>
+          <p class="hint">
+            Only basic formatting is kept — headings, lists, bold, italic and
+            links. Anything else is stripped when you save.
+          </p>
+
+          <button class="btn btn--primary btn--slim" data-act="save-page">Save page</button>
+          <a class="btn btn--slim" href="/pages/${esc(p.slug)}" target="_blank" rel="noopener">View</a>
+          <button class="btn btn--slim btn--danger" data-act="delete-page">Delete</button>
+        </div>
+      </article>`).join('') || '<p class="hint">No pages yet.</p>';
+  }
+
+  $('#pageList').addEventListener('click', async (e) => {
+    const head = e.target.closest('.row__head');
+    if (head) { head.parentElement.classList.toggle('is-open'); return; }
+
+    const row = e.target.closest('.row');
+    if (!row) return;
+    const id = row.dataset.id;
+
+    const cmd = e.target.dataset.cmd;
+    if (cmd) {
+      /* execCommand is deprecated but it is the only thing that edits a
+         contenteditable selection without shipping an editor library, and the
+         output is sanitised server-side anyway */
+      const area = $('.editor__area', row);
+      area.focus();
+      const run = (c, v) => document.execCommand(c, false, v);
+      if (cmd === 'bold') run('bold');
+      if (cmd === 'italic') run('italic');
+      if (cmd === 'h2') run('formatBlock', '<h2>');
+      if (cmd === 'h3') run('formatBlock', '<h3>');
+      if (cmd === 'ul') run('insertUnorderedList');
+      if (cmd === 'ol') run('insertOrderedList');
+      if (cmd === 'clear') run('formatBlock', '<p>');
+      if (cmd === 'link') {
+        const url = prompt('Link to (a full URL, or a path like /shop)');
+        if (url) run('createLink', url);
+      }
+      return;
+    }
+
+    if (e.target.dataset.act === 'save-page') {
+      const get = (f) => $(`[data-f="${f}"]`, row).value.trim();
+      const saved = await api(`/api/admin/pages/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          title: get('title'),
+          slug: get('slug'),
+          is_published: get('is_published') === 'true',
+          body_html: $('.editor__area', row).innerHTML
+        })
+      });
+      if (saved) { toast('Page saved'); loadPages(); }
+      return;
+    }
+
+    if (e.target.dataset.act === 'delete-page') {
+      if (!confirm('Delete this page? Any link to it will 404.')) return;
+      const done = await api(`/api/admin/pages/${id}`, { method: 'DELETE' });
+      if (done) { toast('Page deleted'); loadPages(); }
+    }
+  });
+
+  $('#newPage').addEventListener('click', async () => {
+    const title = prompt('Page title?');
+    if (!title) return;
+
+    const created = await api('/api/admin/pages', {
+      method: 'POST',
+      body: JSON.stringify({
+        title,
+        slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+        body_html: '<p>Write something here.</p>',
+        is_published: false
+      })
+    });
+    if (created) { toast('Page created (hidden until you publish it)'); loadPages(); }
   });
 
   /* ---------- contact & social ---------- */

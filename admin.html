@@ -49,6 +49,8 @@
       <button class="side__link" data-view="products">Products &amp; stock</button>
       <button class="side__link" data-view="slides">Hero slider</button>
       <button class="side__link" data-view="orders">Orders</button>
+      <button class="side__link" data-view="payments">Payments</button>
+      <button class="side__link" data-view="pages">Pages</button>
       <button class="side__link" data-view="contact">Contact &amp; social</button>
       <button class="side__link" data-view="subscribers">Subscribers</button>
     </nav>
@@ -116,6 +118,30 @@
         </select>
       </div>
       <div class="tablewrap"><table class="table" id="orderTable"></table></div>
+    </section>
+
+    <!-- ---------- PAYMENTS ---------- -->
+    <section class="view" data-view="payments">
+      <h2>Payments</h2>
+      <p class="hint">
+        Keys are stored server-side and never sent back to this page — you will
+        see only whether one is saved. Leave a secret field blank to keep the
+        one already stored.
+      </p>
+      <div id="paymentPanel"></div>
+    </section>
+
+    <!-- ---------- PAGES ---------- -->
+    <section class="view" data-view="pages">
+      <div class="view__head">
+        <h2>Pages</h2>
+        <button class="btn btn--primary" id="newPage">New page</button>
+      </div>
+      <p class="hint">
+        Terms, privacy, refunds, shipping and the rest. These are live on the
+        storefront at <code>/pages/&lt;slug&gt;</code> as soon as you save.
+      </p>
+      <div id="pageList" class="stack"></div>
     </section>
 
     <!-- ---------- CONTACT & SOCIAL ---------- -->

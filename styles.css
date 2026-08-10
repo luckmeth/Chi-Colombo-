@@ -1236,3 +1236,87 @@ h1, h2, h3, h4 { margin: 0; font-weight: 900; }
   .cartpage { grid-template-columns: 1fr; gap: 28px; }
   .cartpage__summary { position: static; }
 }
+
+/* ---------------------------------------------------------
+   Checkout, confirmation and tracking
+   --------------------------------------------------------- */
+
+.checkout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr); gap: 48px; align-items: start; }
+.checkout__form h2 { font-size: 13px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--brown-deep); margin: 0 0 16px; }
+.checkout__form h2 + * { margin-top: 0; }
+.checkout__form > h2:not(:first-child) { margin-top: 34px; }
+
+.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field--wide { grid-column: 1 / -1; }
+.field > span { font-size: 12px; font-weight: 600; color: var(--muted); }
+.field b { color: var(--spice); }
+
+.input {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  background: var(--white);
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  border-radius: 2px;
+}
+.input:focus { outline: 2px solid var(--brown); outline-offset: -1px; }
+textarea.input { resize: vertical; }
+
+.paymethods { display: flex; flex-direction: column; gap: 10px; margin-bottom: 8px; }
+.paymethod { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border: 1px solid var(--line); cursor: pointer; background: var(--white); }
+.paymethod:has(input:checked) { border-color: var(--brown-deep); background: var(--paper); }
+.paymethod strong { display: block; font-size: 14px; color: var(--brown-deep); }
+.paymethod em { font-style: normal; font-size: 12px; color: var(--muted); }
+/* a provider with no keys is shown, but plainly not an option */
+.paymethod.is-off { opacity: .55; cursor: not-allowed; }
+
+.checkout__warn { font-size: 13px; color: var(--spice); border: 1px dashed var(--line); padding: 14px 16px; margin: 0; }
+.checkout__msg { color: #A63D2F; font-size: 13px; margin: 14px 0 0; min-height: 18px; }
+.checkout__fine { font-size: 11.5px; color: var(--muted); margin-top: 14px; text-align: center; }
+.checkout__fine a { text-decoration: underline; text-underline-offset: 3px; }
+
+.checkout__summary { background: var(--paper); border: 1px solid var(--line); padding: 24px; position: sticky; top: calc(34px + var(--header-h) + 16px); }
+.checkout__summary h2 { font-size: 13px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--brown-deep); margin: 0 0 18px; }
+.checkout__lines { margin-bottom: 18px; }
+.checkout__line { display: flex; justify-content: space-between; gap: 14px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.checkout__line em { display: block; font-style: normal; font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* ---------- tracking ---------- */
+
+.track__form .fields { grid-template-columns: 1fr 1fr; }
+.track__form button { margin-top: 6px; }
+.track__h2 { font-size: 13px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--brown-deep); margin: 34px 0 12px; }
+.track__items { margin-bottom: 18px; }
+
+.track__courier { background: var(--paper); border: 1px solid var(--line); padding: 16px 18px; margin-bottom: 26px; }
+.track__courier strong { display: block; color: var(--brown-deep); margin-bottom: 4px; }
+.track__courier span { display: block; font-size: 13px; color: var(--muted); }
+.track__courier a { display: inline-block; margin-top: 8px; }
+
+.timeline { list-style: none; padding: 0; margin: 26px 0; }
+.timeline__step { position: relative; padding: 0 0 22px 26px; border-left: 2px solid var(--line); }
+.timeline__step:last-child { border-left-color: transparent; padding-bottom: 0; }
+.timeline__step::before {
+  content: "";
+  position: absolute;
+  left: -7px; top: 2px;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 2px solid var(--line);
+}
+.timeline__step.is-done::before { background: var(--brown); border-color: var(--brown); }
+.timeline__step strong { display: block; font-size: 14px; color: var(--brown-deep); }
+.timeline__step em { font-style: normal; font-size: 12px; color: var(--muted); }
+.timeline__step span { display: block; font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+/* steps that are not part of the normal journey (cancelled, flagged) */
+.timeline__step--extra::before { background: var(--spice); border-color: var(--spice); }
+
+@media (max-width: 900px) {
+  .checkout { grid-template-columns: 1fr; gap: 28px; }
+  .checkout__summary { position: static; }
+  .fields, .track__form .fields { grid-template-columns: 1fr; }
+}

@@ -8,6 +8,7 @@ import { dirname, join } from 'node:path';
 
 import { admin, currentUser } from './db.js';
 import { adminRouter } from './admin.js';
+import { paymentsRouter } from './payments.js';
 
 const app = express();
 
@@ -178,6 +179,10 @@ app.get('/api/pages/:slug', route(async (req, res) => {
   if (!data) return fail(res, 404, 'Page not found');
   res.json(data);
 }));
+
+/* Payment start/notify and order tracking. Mounted at /api rather than
+   /api/payments because tracking an order is not a payment operation. */
+app.use('/api', paymentsRouter);
 
 app.use('/api/admin', adminLimiter, adminRouter);
 
@@ -394,14 +399,42 @@ app.delete('/api/cart/:cartId/items/:itemId', writeLimiter, route(async (req, re
    inside checkout_cart() so they cannot half-apply.
    --------------------------------------------------------- */
 
+/** What delivery costs for a given subtotal, from the admin's own settings. */
+export async function shippingFor(subtotalCents) {
+  const { data } = await admin
+    .from('app_settings')
+    .select('free_shipping_threshold_cents, flat_shipping_cents')
+    .eq('id', 'global')
+    .maybeSingle();
+
+  const threshold = data?.free_shipping_threshold_cents ?? 0;
+  const flat = data?.flat_shipping_cents ?? 0;
+
+  return threshold > 0 && subtotalCents >= threshold ? 0 : flat;
+}
+
 app.post('/api/checkout', writeLimiter, route(async (req, res) => {
-  const { cart_id: cartId, email, address, shipping_cents: shipping = 0 } = req.body ?? {};
+  const { cart_id: cartId, email, address } = req.body ?? {};
 
   if (!(await ownsCart(req, cartId))) return fail(res, 403, 'Not your cart');
   if (!isEmail(email)) return fail(res, 400, 'A valid email is required');
-  if (!Number.isInteger(shipping) || shipping < 0) {
-    return fail(res, 400, 'shipping_cents must be a non-negative whole number');
-  }
+
+  /* Shipping is computed here, never taken from the request. The page shows a
+     quote, but a quote the client could edit is a discount anyone can grant
+     themselves — post shipping_cents: 0 and delivery is free. */
+  const { data: lines, error: lineErr } = await admin
+    .from('cart_items')
+    .select('qty, product_variants ( price_cents, products ( price_cents ) )')
+    .eq('cart_id', cartId);
+
+  if (lineErr) return fail(res, 500, 'Could not price the cart', lineErr.message);
+
+  const subtotal = (lines ?? []).reduce((sum, row) => {
+    const unit = row.product_variants.price_cents ?? row.product_variants.products.price_cents;
+    return sum + unit * row.qty;
+  }, 0);
+
+  const shipping = await shippingFor(subtotal);
 
   const { data, error } = await admin.rpc('checkout_cart', {
     p_cart_id: cartId,
@@ -419,13 +452,29 @@ app.post('/api/checkout', writeLimiter, route(async (req, res) => {
   }
 
   const order = Array.isArray(data) ? data[0] : data;
+
+  /* the first entry in the timeline the tracking page shows */
+  await admin.from('order_events').insert({
+    order_id: order.id,
+    status: 'pending',
+    note: 'Order placed'
+  });
+
   res.status(201).json({
     order_id: order.id,
     order_number: order.order_number,
+    subtotal_cents: order.subtotal_cents,
+    shipping_cents: order.shipping_cents,
     total_cents: order.total_cents,
     currency: order.currency,
     status: order.status
   });
+}));
+
+/** What delivery would cost right now — so the cart can quote it honestly. */
+app.get('/api/shipping-quote', route(async (req, res) => {
+  const subtotal = Number(req.query.subtotal_cents) || 0;
+  res.json({ shipping_cents: await shippingFor(subtotal) });
 }));
 
 /* ---------------------------------------------------------

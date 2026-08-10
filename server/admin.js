@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
 import { admin, currentUser } from './db.js';
+import { restock } from './payments.js';
 
 export const adminRouter = Router();
 
@@ -544,6 +545,182 @@ adminRouter.delete('/socials/:id', route(async (req, res) => {
 }));
 
 /* ---------------------------------------------------------
+   Payment settings
+
+   Secrets go in and never come back out. A GET returns only whether a
+   value is set and its last four characters, because the panel runs in
+   a browser with the anon key — anything this endpoint returns is one
+   devtools tab away from being read.
+   --------------------------------------------------------- */
+
+const SECRET_FIELDS = [
+  'payhere_merchant_secret', 'payhere_app_secret', 'paypal_secret'
+];
+
+const PAYMENT_FIELDS = [
+  'active_provider',
+  'payhere_enabled', 'payhere_sandbox', 'payhere_merchant_id',
+  'payhere_merchant_secret', 'payhere_app_id', 'payhere_app_secret',
+  'paypal_enabled', 'paypal_sandbox', 'paypal_client_id', 'paypal_secret'
+];
+
+/** { configured: bool, hint: '…1234' } — never the value itself. */
+const mask = (value) => ({
+  configured: Boolean(value),
+  hint: value ? `…${String(value).slice(-4)}` : null
+});
+
+/** The only shape of payment settings that may leave the server. */
+async function paymentView() {
+  const { data, error } = await admin
+    .from('payment_settings').select('*').eq('id', 'global').maybeSingle();
+
+  if (error) throw new Error(error.message);
+
+  const s = data ?? {};
+  return {
+    active_provider: s.active_provider ?? 'payhere',
+
+    payhere_enabled: Boolean(s.payhere_enabled),
+    payhere_sandbox: s.payhere_sandbox !== false,
+    payhere_merchant_id: s.payhere_merchant_id ?? '',
+    payhere_app_id: s.payhere_app_id ?? '',
+    payhere_merchant_secret: mask(s.payhere_merchant_secret),
+    payhere_app_secret: mask(s.payhere_app_secret),
+
+    paypal_enabled: Boolean(s.paypal_enabled),
+    paypal_sandbox: s.paypal_sandbox !== false,
+    paypal_client_id: s.paypal_client_id ?? '',
+    paypal_secret: mask(s.paypal_secret),
+
+    /* the storefront only offers a provider that is both on and complete */
+    payhere_ready: Boolean(s.payhere_enabled && s.payhere_merchant_id && s.payhere_merchant_secret),
+    updated_at: s.updated_at ?? null
+  };
+}
+
+adminRouter.get('/payments', route(async (_req, res) => {
+  res.json(await paymentView());
+}));
+
+adminRouter.patch('/payments', route(async (req, res) => {
+  const body = pick(req.body, PAYMENT_FIELDS);
+  if (!Object.keys(body).length) return fail(res, 400, 'Nothing to update');
+
+  /* An empty secret field means "leave it alone", not "erase it" — otherwise
+     saving the form after a page load would wipe every stored key, since the
+     GET above never sent them back to be re-submitted. */
+  for (const field of SECRET_FIELDS) {
+    if (field in body && !String(body[field]).trim()) delete body[field];
+  }
+
+  if (body.active_provider && !['payhere', 'paypal'].includes(body.active_provider)) {
+    return fail(res, 400, 'Unknown payment provider');
+  }
+
+  const { error } = await admin
+    .from('payment_settings').update(body).eq('id', 'global');
+
+  if (error) return fail(res, 500, 'Could not save payment settings', error.message);
+
+  /* echo the masked view, so the panel repaints from stored truth rather
+     than from what it just typed */
+  res.json(await paymentView());
+}));
+
+/* ---------------------------------------------------------
+   Content pages
+   --------------------------------------------------------- */
+
+/* Admin-authored HTML is rendered as markup on the public storefront, so it
+   is filtered here rather than trusted. An allow-list, not a block-list:
+   anything not named is dropped, which fails closed when something new
+   turns up. */
+const ALLOWED_TAGS = new Set([
+  'p', 'br', 'hr', 'h2', 'h3', 'h4', 'ul', 'ol', 'li',
+  'strong', 'b', 'em', 'i', 'u', 'a', 'blockquote'
+]);
+
+function sanitizeHtml(input) {
+  let html = String(input ?? '');
+
+  /* these carry their payload as content, so the content goes too */
+  html = html.replace(/<(script|style|iframe|object|embed|noscript|svg)\b[\s\S]*?<\/\1\s*>/gi, '');
+  html = html.replace(/<!--[\s\S]*?-->/g, '');
+
+  return html.replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b([^>]*)>/g, (match, rawTag, attrs) => {
+    const tag = rawTag.toLowerCase();
+    if (!ALLOWED_TAGS.has(tag)) return '';
+    if (match.startsWith('</')) return `</${tag}>`;
+
+    /* every attribute is dropped except a safe href — that removes onclick,
+       style, srcset and everything else in one move */
+    if (tag === 'a') {
+      const found = /href\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/i.exec(attrs);
+      const url = (found?.[2] ?? found?.[3] ?? found?.[4] ?? '').trim();
+      return /^(https?:\/\/|\/|mailto:|tel:|#)/i.test(url)
+        ? `<a href="${url.replace(/"/g, '&quot;')}">`
+        : '<a>';
+    }
+
+    return `<${tag}>`;
+  });
+}
+
+const PAGE_FIELDS = ['slug', 'title', 'body_html', 'is_published', 'sort_order'];
+
+adminRouter.get('/pages', route(async (_req, res) => {
+  const { data, error } = await admin
+    .from('content_pages').select('*').order('sort_order');
+  if (error) return fail(res, 500, 'Could not load pages', error.message);
+  res.json(data);
+}));
+
+adminRouter.post('/pages', route(async (req, res) => {
+  const body = pick(req.body, PAGE_FIELDS);
+  if (!body.slug || !body.title) return fail(res, 400, 'slug and title are required');
+  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(body.slug)) {
+    return fail(res, 400, 'The slug may only contain lowercase letters, numbers and hyphens');
+  }
+
+  body.body_html = sanitizeHtml(body.body_html ?? '');
+
+  const { data, error } = await admin.from('content_pages').insert(body).select().single();
+  if (error) {
+    if (error.code === '23505') return fail(res, 409, 'That slug is already taken');
+    return fail(res, 500, 'Could not create the page', error.message);
+  }
+  res.status(201).json(data);
+}));
+
+adminRouter.patch('/pages/:id', route(async (req, res) => {
+  if (!isUuid(req.params.id)) return fail(res, 400, 'Bad page id');
+
+  const body = pick(req.body, PAGE_FIELDS);
+  if (!Object.keys(body).length) return fail(res, 400, 'Nothing to update');
+  if (body.slug && !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(body.slug)) {
+    return fail(res, 400, 'The slug may only contain lowercase letters, numbers and hyphens');
+  }
+  if ('body_html' in body) body.body_html = sanitizeHtml(body.body_html);
+
+  const { data, error } = await admin
+    .from('content_pages').update(body).eq('id', req.params.id).select().single();
+
+  if (error) {
+    if (error.code === '23505') return fail(res, 409, 'That slug is already taken');
+    return fail(res, 500, 'Could not save the page', error.message);
+  }
+  res.json(data);
+}));
+
+adminRouter.delete('/pages/:id', route(async (req, res) => {
+  if (!isUuid(req.params.id)) return fail(res, 400, 'Bad page id');
+  const { error } = await admin.from('content_pages').delete().eq('id', req.params.id);
+  if (error) return fail(res, 500, 'Could not delete the page', error.message);
+  res.status(204).end();
+}));
+
+/* ---------------------------------------------------------
    Orders & subscribers
    --------------------------------------------------------- */
 
@@ -556,19 +733,71 @@ adminRouter.get('/orders', route(async (req, res) => {
   res.json(data);
 }));
 
+adminRouter.get('/orders/:id', route(async (req, res) => {
+  if (!isUuid(req.params.id)) return fail(res, 400, 'Bad order id');
+
+  const { data, error } = await admin
+    .from('orders').select('*, order_items(*)').eq('id', req.params.id).maybeSingle();
+
+  if (error) return fail(res, 500, 'Could not load the order', error.message);
+  if (!data) return fail(res, 404, 'Order not found');
+
+  const { data: events } = await admin
+    .from('order_events').select('*').eq('order_id', data.id).order('created_at');
+
+  res.json({ ...data, events: events ?? [] });
+}));
+
+const ORDER_STATUSES = ['pending', 'paid', 'fulfilled', 'cancelled', 'refunded'];
+
 adminRouter.patch('/orders/:id', route(async (req, res) => {
   if (!isUuid(req.params.id)) return fail(res, 400, 'Bad order id');
 
-  const allowed = ['pending', 'paid', 'fulfilled', 'cancelled', 'refunded'];
-  const { status } = req.body ?? {};
-  if (!allowed.includes(status)) {
-    return fail(res, 400, `status must be one of: ${allowed.join(', ')}`);
+  const body = pick(req.body, ['status', 'courier', 'tracking_number', 'tracking_url']);
+  if (!Object.keys(body).length) return fail(res, 400, 'Nothing to update');
+
+  if (body.status && !ORDER_STATUSES.includes(body.status)) {
+    return fail(res, 400, `status must be one of: ${ORDER_STATUSES.join(', ')}`);
+  }
+  if (body.tracking_url && !/^https?:\/\//i.test(body.tracking_url)) {
+    return fail(res, 400, 'tracking_url must start with http:// or https://');
   }
 
+  const { data: before } = await admin
+    .from('orders').select('status').eq('id', req.params.id).maybeSingle();
+
+  if (!before) return fail(res, 404, 'Order not found');
+
+  /* Cancelling from here has to give the stock back, exactly as a failed
+     payment notification does — checkout_cart took the units when the order
+     was created, before any money moved. */
+  const cancelling = body.status === 'cancelled' && before.status !== 'cancelled';
+
   const { data, error } = await admin
-    .from('orders').update({ status }).eq('id', req.params.id).select().single();
+    .from('orders').update(body).eq('id', req.params.id).select().single();
 
   if (error) return fail(res, 500, 'Could not update order', error.message);
+
+  if (body.status && body.status !== before.status) {
+    await admin.from('order_events').insert({
+      order_id: data.id,
+      status: body.status,
+      note: `Marked ${body.status} in the admin panel`,
+      actor: req.adminUser.id
+    });
+  }
+
+  if (body.tracking_number) {
+    await admin.from('order_events').insert({
+      order_id: data.id,
+      status: data.status,
+      note: `Tracking number added${body.courier ? ` (${body.courier})` : ''}: ${body.tracking_number}`,
+      actor: req.adminUser.id
+    });
+  }
+
+  if (cancelling) await restock(data.id);
+
   res.json(data);
 }));
 

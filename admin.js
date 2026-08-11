@@ -245,15 +245,18 @@
       };
     }
 
+    const body = await res.json().catch(() => null);
+
     if (res.status >= 500) {
+      /* 503 is the server reporting its own misconfiguration and it says
+         exactly what is wrong — repeat that rather than guessing over it. */
       return {
         unreachable: true,
-        detail: 'The API crashed (HTTP ' + res.status + '). ' +
-                'Most often the Supabase environment variables are missing on the host.'
+        detail: body?.detail ?? body?.error ??
+                `The API failed (HTTP ${res.status}). Check /api/health for the reason.`
       };
     }
 
-    const body = await res.json().catch(() => null);
     if (!body) return { unreachable: true, detail: 'The API returned something unreadable.' };
 
     return { isAdmin: Boolean(body.isAdmin), email: body.email };

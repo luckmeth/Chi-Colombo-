@@ -1,6 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
 
-const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY } = process.env;
+const { SUPABASE_URL, SUPABASE_ANON_KEY } = process.env;
+
+/* Supabase calls this the "service_role" key, and it gets written down under
+   several near-miss names. Accept the common ones: a key that is present under
+   a slightly different name is a typo, not a decision, and failing on it costs
+   an afternoon to discover. SUPABASE_SERVICE_ROLE_KEY stays the documented
+   name — the rest are just tolerated. */
+const SUPABASE_SERVICE_ROLE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_SERVICE_KEY ||
+  process.env.SUPABASE_SECRET_KEY ||
+  '';
 
 const missing = [
   ['SUPABASE_URL', SUPABASE_URL],
@@ -24,7 +35,13 @@ if (configError) console.error('[api]', configError);
 export const envReport = {
   SUPABASE_URL: Boolean(SUPABASE_URL),
   SUPABASE_ANON_KEY: Boolean(SUPABASE_ANON_KEY),
-  SUPABASE_SERVICE_ROLE_KEY: Boolean(SUPABASE_SERVICE_ROLE_KEY)
+  SUPABASE_SERVICE_ROLE_KEY: Boolean(SUPABASE_SERVICE_ROLE_KEY),
+
+  /* Every SUPABASE_* name the process actually has. If one is expected but
+     missing, this shows whether it arrived under a slightly different name —
+     a typo in the key is invisible otherwise, because the variable simply
+     is not there under the name we look for. Names only; no values. */
+  seen: Object.keys(process.env).filter((k) => k.toUpperCase().startsWith('SUPABASE')).sort()
 };
 
 /* Stand-in so importing this module never explodes. Any route that slips past

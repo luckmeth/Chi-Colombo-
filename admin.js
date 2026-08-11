@@ -217,6 +217,48 @@
     e.target.value = '';        /* so the same file can be picked again */
   });
 
+  /* ---------- admin gate check ----------
+     Asks the API whether the signed-in account is an admin, and reports
+     *why* it could not answer when it could not. `api()` collapses every
+     failure to null, which is fine for buttons but not for the one check
+     that decides whether the whole panel opens. */
+
+  async function adminStatus() {
+    const { data: { session } } = await sb.auth.getSession();
+
+    const res = await fetch(API + '/api/admin/status', {
+      headers: session ? { Authorization: `Bearer ${session.access_token}` } : {}
+    }).catch(() => null);
+
+    if (!res) {
+      return {
+        unreachable: true,
+        detail: `Cannot reach the API at ${API || 'this site'}. ` +
+                'If this is the deployed site, the serverless function is down.'
+      };
+    }
+
+    if (res.status === 404) {
+      return {
+        unreachable: true,
+        detail: 'The API route is missing (404). Check the /api function is deployed.'
+      };
+    }
+
+    if (res.status >= 500) {
+      return {
+        unreachable: true,
+        detail: 'The API crashed (HTTP ' + res.status + '). ' +
+                'Most often the Supabase environment variables are missing on the host.'
+      };
+    }
+
+    const body = await res.json().catch(() => null);
+    if (!body) return { unreachable: true, detail: 'The API returned something unreadable.' };
+
+    return { isAdmin: Boolean(body.isAdmin), email: body.email };
+  }
+
   /* ---------- gate ---------- */
 
   function showGate(message) {
@@ -245,8 +287,10 @@
     msg.classList.add('is-ok');
     btn.disabled = true;
 
+    const email = $('#email').value.trim();
+
     const { error } = await sb.auth.signInWithPassword({
-      email: $('#email').value.trim(),
+      email,
       password: $('#password').value
     });
 
@@ -258,11 +302,22 @@
       return;
     }
 
-    const status = await api('/api/admin/status');
-    if (!status?.isAdmin) {
+    /* Distinguish "the gate said no" from "the gate never answered". They are
+       different problems — one is a missing site_admins row, the other is the
+       API being down — and reporting both as "not an admin" sends you looking
+       in the wrong place. */
+    const status = await adminStatus();
+
+    if (status.unreachable) {
+      msg.classList.remove('is-ok');
+      msg.textContent = status.detail;
+      return;
+    }
+
+    if (!status.isAdmin) {
       await sb.auth.signOut();
       msg.classList.remove('is-ok');
-      msg.textContent = 'That account is not an admin. Add it to site_admins.';
+      msg.textContent = `Signed in, but ${email} is not an admin. Add it to site_admins.`;
       return;
     }
 
@@ -1299,8 +1354,9 @@
     const { data: { session } } = await sb.auth.getSession();
     if (!session) return showGate();
 
-    const status = await api('/api/admin/status');
-    if (status?.isAdmin) showPanel(status.email);
+    const status = await adminStatus();
+    if (status.isAdmin) showPanel(status.email);
+    else if (status.unreachable) showGate(status.detail);
     else showGate('That account is not an admin.');
   })();
 

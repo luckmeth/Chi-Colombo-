@@ -4,29 +4,11 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
-    {
-      "source": "/collections/:handle",
-      "destination": "/collection.html"
-    },
-    {
-      "source": "/products/:handle",
-      "destination": "/product.html"
-    },
-    {
-      "source": "/pages/:slug",
-      "destination": "/page.html"
-    },
-    {
-      "source": "/order/:number",
-      "destination": "/confirmation.html"
-    },
-    {
-      "source": "/shop",
-      "destination": "/collection.html"
-    },
-    {
-      "source": "/search",
-      "destination": "/collection.html"
-    }
+    { "source": "/collections/:handle", "destination": "/collection" },
+    { "source": "/products/:handle", "destination": "/product" },
+    { "source": "/pages/:slug", "destination": "/page" },
+    { "source": "/order/:number", "destination": "/confirmation" },
+    { "source": "/shop", "destination": "/collection" },
+    { "source": "/search", "destination": "/collection" }
   ]
 }

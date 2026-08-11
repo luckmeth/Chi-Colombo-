@@ -14,4 +14,11 @@ import { config } from 'dotenv';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-config({ path: join(dirname(fileURLToPath(import.meta.url)), '.env') });
+const HERE = dirname(fileURLToPath(import.meta.url));
+
+/* server/.env first, then the repo root. dotenv never overwrites a variable
+   that is already set, so the first file to define a key wins and anything
+   already in the real environment beats both. The root is checked too because
+   package.json lives there now, which makes it the obvious place to put one. */
+config({ path: join(HERE, '.env') });
+config({ path: join(HERE, '..', '.env') });

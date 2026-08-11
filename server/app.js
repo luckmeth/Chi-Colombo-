@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-import { admin, currentUser } from './db.js';
+import { admin, currentUser, configError, envReport } from './db.js';
 import { adminRouter } from './admin.js';
 import { paymentsRouter } from './payments.js';
 
@@ -29,6 +29,14 @@ app.use(cors({
   origin: (process.env.CORS_ORIGIN ?? 'http://localhost:4321').split(','),
   credentials: true
 }));
+
+/* Without credentials every route would fail obscurely deep inside a Supabase
+   call. Refuse them all at the door with the reason instead — except
+   /api/health, which exists precisely to report this. */
+app.use('/api', (req, res, next) => {
+  if (!configError || req.path === '/health') return next();
+  res.status(503).json({ error: 'The server is not configured', detail: configError });
+});
 
 /* write endpoints get a tighter budget than reads */
 const writeLimiter = rateLimit({ windowMs: 60_000, max: 30 });
@@ -518,9 +526,20 @@ app.post('/api/newsletter', writeLimiter, route(async (req, res) => {
    Health + error handling
    --------------------------------------------------------- */
 
+/* Answers even when nothing else can, because when the API is broken this is
+   the endpoint you check first. `env` reports which variables the process can
+   see — names only, never values. */
 app.get('/api/health', route(async (_req, res) => {
+  if (configError) {
+    return res.status(503).json({ ok: false, db: 'not configured', error: configError, env: envReport });
+  }
+
   const { error } = await admin.from('products').select('id', { head: true, count: 'exact' });
-  res.json({ ok: !error, db: error ? 'unreachable' : 'ok' });
+  res.json({
+    ok: !error,
+    db: error ? 'unreachable' : 'ok',
+    ...(error ? { error: error.message, env: envReport } : {})
+  });
 }));
 
 /* ---------------------------------------------------------

@@ -2,23 +2,37 @@ import { createClient } from '@supabase/supabase-js';
 
 const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY } = process.env;
 
-/* This module is imported at cold start, so a missing variable takes the whole
-   function down before any route runs — on a platform that means an opaque 500
-   with the real cause buried in the build log. Name every missing variable at
-   once, and say where it is meant to come from in each environment. */
 const missing = [
   ['SUPABASE_URL', SUPABASE_URL],
   ['SUPABASE_SERVICE_ROLE_KEY', SUPABASE_SERVICE_ROLE_KEY]
 ].filter(([, value]) => !value).map(([name]) => name);
 
-if (missing.length) {
-  throw new Error(
-    `Supabase credentials missing: ${missing.join(', ')}.\n` +
-    '  Locally:  copy server/.env.example to server/.env and fill it in.\n' +
-    '  On Vercel: Project Settings -> Environment Variables.\n' +
-    '  Values are in Supabase -> Project Settings -> API.'
-  );
-}
+/* This module is imported at cold start. Throwing here takes the whole function
+   down before any route runs, and a serverless host reports that as an opaque
+   500 with the real cause buried in a log you may not be reading — which is
+   exactly how a missing variable turned into an afternoon of guesswork.
+   So: fail soft here, and let /api/health say what is wrong. */
+export const configError = missing.length
+  ? `Supabase credentials missing on this host: ${missing.join(', ')}. ` +
+    'Locally, fill in server/.env. On Vercel, Project Settings -> Environment ' +
+    'Variables, and make sure they are ticked for the Production environment.'
+  : null;
+
+if (configError) console.error('[api]', configError);
+
+/** Which variables the process can see. Names only — never the values. */
+export const envReport = {
+  SUPABASE_URL: Boolean(SUPABASE_URL),
+  SUPABASE_ANON_KEY: Boolean(SUPABASE_ANON_KEY),
+  SUPABASE_SERVICE_ROLE_KEY: Boolean(SUPABASE_SERVICE_ROLE_KEY)
+};
+
+/* Stand-in so importing this module never explodes. Any route that slips past
+   the guard in app.js gets a message naming the cause instead of
+   "cannot read properties of undefined". */
+const unconfigured = new Proxy({}, {
+  get() { throw new Error(configError ?? 'Supabase client is not configured'); }
+});
 
 /**
  * Service-role client. Bypasses RLS, so it must never be exposed to the browser
@@ -27,9 +41,11 @@ if (missing.length) {
  * Guest carts have no customer_id and are therefore invisible to RLS by design —
  * they can only be driven through here.
  */
-export const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false }
-});
+export const admin = configError
+  ? unconfigured
+  : createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
 
 /**
  * Builds a client scoped to an end user's access token, so RLS applies as that

@@ -4,6 +4,8 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
+    { "source": "/api/:path*", "destination": "/api?__vpath=:path*" },
+
     { "source": "/collections/:handle", "destination": "/collection" },
     { "source": "/products/:handle", "destination": "/product" },
     { "source": "/pages/:slug", "destination": "/page" },

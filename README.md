@@ -16,7 +16,7 @@ chic-colombo/
 ├── package.json          deps + scripts for the whole project
 ├── partials/             header + footer markup, injected by layout.js
 ├── api/
-│   └── [[...path]].js    Vercel entry point — hands /api/* to the Express app
+│   └── index.js          Vercel entry point — hands /api/* to the Express app
 │
 │   pages, one script each:
 ├── index.html  home.js         hero, rails, brand film
@@ -290,7 +290,7 @@ Three pieces make that work, and each is load-bearing:
 
 | | |
 |---|---|
-| `api/[[...path]].js` | The optional-catch-all filename is deliberate. It leaves the full path on `req.url`, so the routes in `server/app.js` (`/api/products`, `/api/cart/:id`) keep matching. A plain `api/index.js` would deliver `/api` instead and every route would 404. |
+| `api/index.js` + the `/api/:path*` rewrite | Catch-all *filenames* (`api/[...path].js`) are a framework convention and are not honoured on this project — Vercel matched one segment only, so `/api/health` worked while `/api/admin/status` 404'd. The rewrite carries the path in `__vpath` and `api/index.js` restores it onto `req.url`, which works whichever URL Vercel delivers. |
 | `vercel.json` | `cleanUrls: true` is why `/admin` serves `admin.html`. Without it that URL 404s. |
 | `config.js` | Resolves the API base to `''` (same origin) anywhere but localhost. Same origin also means CORS never comes into it. |
 

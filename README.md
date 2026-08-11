@@ -54,17 +54,24 @@ chic-colombo/
 
 ## 1. The logo
 
-`assets/logo.png` **does not exist yet.** The header and footer currently show a
-hand-drawn SVG approximation, which is *not* your real logo.
+`assets/logo.png` is the real mark — palm, leopard, wordmark and
+"PREMIUM APPAREL" in one near-square lockup. `layout.js` probes for it on
+load, swaps it into the header and footer, and deletes the SVG stand-ins.
 
-Save your logo — ideally with the background removed — to:
+It was supplied with the background knocked out, which left ~3,500 near-black
+pixels of the old pattern scattered round the edges. Those were made
+transparent, the leftover shapes dropped, and the canvas cropped to the
+artwork: 406×299 → 268×272.
 
-```
-assets/logo.png
-```
+Two display notes, both in `styles.css`:
 
-`layout.js` probes for that file on load. When it's there, it swaps in
-automatically and deletes the SVG stand-ins. No code changes needed.
+- **It is drawn in cream, for dark ground.** Over the hero that is right, but
+  the header turns solid paper on scroll and cream on cream is invisible.
+  `.header.is-solid .logo__img` darkens it into the brown end of the palette
+  rather than keeping a second file in step.
+- **It is nearly square**, not a wide lockup, so it needs height to stay
+  readable — 64px in an 80px bar. Swapping in a horizontal version later means
+  changing `.logo__img` only.
 
 ---
 

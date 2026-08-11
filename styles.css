@@ -180,8 +180,24 @@ h1, h2, h3, h4 { margin: 0; font-weight: 900; }
 .logo__mark path, .logo__mark ellipse, .logo__mark rect, .logo__mark circle { fill: currentColor; }
 
 /* real logo, once assets/logo.png is present */
-.logo__img { height: 40px; width: auto; display: block; }
-.footer__logo-img { width: min(300px, 60vw); height: auto; display: block; }
+/* The real mark is a near-square lockup — palm, leopard, wordmark and
+   "PREMIUM APPAREL" stacked — so it needs more height than the old wide
+   SVG stand-in did, or the wordmark stops being readable. 56px inside an
+   80px bar leaves it room without crowding the nav. */
+.logo__img {
+  height: 64px;
+  width: auto;
+  display: block;
+  transition: filter .35s var(--ease);
+}
+
+/* It is drawn in cream, for dark ground. Over the hero that is right; once
+   the header turns solid the ground becomes paper, and cream on cream is
+   invisible. Darkening carries it to the brown end of the same palette
+   rather than swapping in a second file. */
+.header.is-solid .logo__img { filter: brightness(.42) saturate(1.5); }
+
+.footer__logo-img { width: min(260px, 58vw); height: auto; display: block; }
 
 .logo__type { display: block; }
 .logo__type svg { width: 116px; height: auto; display: block; fill: currentColor; }

@@ -1,0 +1,113 @@
+<footer class="footer">
+
+  <div class="footer__logo" aria-hidden="true">
+    <img class="footer__logo-img" alt="" hidden>
+    <svg viewBox="0 0 420 400">
+      <g fill="currentColor">
+        <path d="M196 300c-4-52-6-96-2-140l14 1c-4 44-3 88 1 140z"/>
+        <path d="M204 158c-26-30-62-46-98-44 30-14 74-4 98 30z"/>
+        <path d="M204 158c26-30 62-46 98-44-30-14-74-4-98 30z"/>
+        <path d="M204 156c-14-34-42-60-76-70 34-4 68 26 78 66z"/>
+        <path d="M204 156c14-34 42-60 76-70-34-4-68 26-78 66z"/>
+        <path d="M204 154c2-32-6-64-24-88 26 12 38 52 32 88z"/>
+        <path d="M204 154c-2-32 6-64 24-88-26 12-38 52-32 88z"/>
+        <circle cx="204" cy="160" r="9"/>
+        <g transform="translate(96 232)">
+          <path d="M6 42C-16 34-28 12-22-10c4-14 16-20 24-14 6 5 4 14-3 16-6 2-9 8-7 14 3 10 10 17 20 21z"/>
+          <ellipse cx="46" cy="46" rx="40" ry="34"/>
+          <ellipse cx="140" cy="44" rx="46" ry="30"/>
+          <rect x="42" y="18" width="106" height="54" rx="26"/>
+          <path d="M170 30c10-8 20-16 30-20l10 18c-8 4-16 10-22 18z"/>
+          <ellipse cx="216" cy="16" rx="27" ry="21"/>
+          <path d="M232 24c12-2 22 1 26 7 3 6-2 12-12 13-9 1-17-3-20-9z"/>
+          <path d="M196 2c-3-11-1-18 4-20 5-2 10 3 12 13z"/>
+          <path d="M226-2c1-11 5-17 10-17 5 1 8 7 6 17z"/>
+          <path d="M26 66h17l-3 52c0 6-3 9-8 9s-9-3-9-9z"/>
+          <path d="M62 68h17l-4 50c0 6-3 9-8 9s-8-3-8-9z"/>
+          <path d="M124 66h17l-3 52c0 6-3 9-8 9s-9-3-9-9z"/>
+          <path d="M162 64h17l-3 54c0 6-3 9-8 9s-9-3-9-9z"/>
+          <rect x="20" y="118" width="26" height="12" rx="6"/>
+          <rect x="56" y="118" width="26" height="12" rx="6"/>
+          <rect x="118" y="118" width="26" height="12" rx="6"/>
+          <rect x="156" y="118" width="26" height="12" rx="6"/>
+        </g>
+      </g>
+      <text x="210" y="352" text-anchor="middle" fill="currentColor"
+            font-family="Baloo 2, Inter, sans-serif" font-size="52" font-weight="800">chic colombo</text>
+      <text x="210" y="382" text-anchor="middle" fill="currentColor" opacity=".75"
+            font-size="15" letter-spacing="5">PREMIUM APPAREL</text>
+    </svg>
+  </div>
+
+  <div class="wrap">
+    <div class="footer__main">
+
+      <div class="footer__newsletter">
+        <h3>Sign up now</h3>
+        <p>Notifications you won't want to ignore.</p>
+        <form class="signup" id="signupForm" novalidate>
+          <input type="email" id="signupEmail" placeholder="Email address" aria-label="Email address" required>
+          <button type="submit">Sign up</button>
+        </form>
+        <p class="signup__msg" id="signupMsg" role="status"></p>
+      </div>
+
+      <div class="footer__menus">
+        <div class="footer__column">
+          <h4>Shop</h4>
+          <a href="/shop?audience=mens">Men</a>
+          <a href="/shop?audience=womens">Women</a>
+          <a href="/collections/accessories">Accessories</a>
+          <a href="/collections/latest">New Arrivals</a>
+          <a href="/shop">Shop All</a>
+        </div>
+        <div class="footer__column">
+          <h4>Information</h4>
+          <a href="/pages/our-makers">Our Makers</a>
+          <a href="/pages/faq">FAQ</a>
+          <a href="/pages/size-guide">Size Guide</a>
+          <a href="/pages/refund-policy">Returns &amp; Exchanges</a>
+          <a href="/pages/shipping-policy">Shipping Policy</a>
+          <a href="/pages/contact">Contact Us</a>
+          <a href="/track">Track My Order</a>
+        </div>
+        <!-- Replaced from /api/settings when the backend is up; these are the
+             fallbacks so the column is never empty. -->
+        <div class="footer__column">
+          <h4>Follow</h4>
+          <a href="https://instagram.com/chiccolombo">Instagram</a>
+          <a href="https://tiktok.com/@chiccolombo">TikTok</a>
+          <a href="https://facebook.com/chiccolombo">Facebook</a>
+          <a href="https://youtube.com/@chiccolombo">YouTube</a>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="footer__bottom">
+      <p>COLOMBO, SRI LANKA</p>
+      <p class="footer__legal">
+        <a href="/pages/terms">Terms</a>
+        <a href="/pages/privacy">Privacy</a>
+        <a href="/pages/refund-policy">Refunds</a>
+      </p>
+      <p>&copy; <span id="year"></span> Chic Colombo</p>
+    </div>
+  </div>
+</footer>
+
+<!-- ============ CART DRAWER ============ -->
+<aside class="cart" id="cart" aria-hidden="true" aria-label="Cart">
+  <div class="cart__head">
+    <h3>CART</h3>
+    <button id="cartClose" aria-label="Close cart">&times;</button>
+  </div>
+  <div class="cart__body" id="cartBody">
+    <p class="cart__empty">Your cart is empty.</p>
+  </div>
+  <div class="cart__foot">
+    <div class="cart__row"><span>Subtotal</span><strong id="cartTotal">LKR 0.00</strong></div>
+    <a class="btn btn--full" id="cartCheckout" href="/checkout">CHECKOUT</a>
+    <a class="cart__viewall" href="/cart">View full cart</a>
+  </div>
+</aside>

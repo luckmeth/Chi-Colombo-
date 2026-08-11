@@ -302,11 +302,11 @@ select * from (values
   ('image'::slide_kind, 'assets/hero-veranda.png', null::text,
    'PREMIUM APPAREL · MADE IN SRI LANKA', 'Island State of Mind',
    'Made on the island, worn everywhere. Breathable cotton and linen built for the heat.',
-   'SHOP MENS', '#', 'SHOP WOMENS', '#', 0),
+   'SHOP MENS', '/shop?audience=mens', 'SHOP WOMENS', '/shop?audience=womens', 0),
   ('video'::slide_kind, 'assets/brand-film.mp4', 'assets/video-poster.jpg',
    'THE FILM', 'An Evening in the Dry Zone',
    'Shot on a veranda above the paddy fields.',
-   'SHOP THE LOOK', '#', null, null, 1)
+   'SHOP THE LOOK', '/collections/latest', null, null, 1)
 ) as v(kind, media_url, poster_url, eyebrow, title, subtitle,
        cta_label, cta_href, cta2_label, cta2_href, sort_order)
 where not exists (select 1 from hero_slides);

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shop | Chic Colombo</title>
+<meta name="description" content="Browse the Chic Colombo catalogue — island-made apparel for men and women.">
+<meta name="theme-color" content="#8A5626">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Baloo+2:wght@700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<div id="siteHeader"></div>
+
+<!-- One page, three routes: /collections/:handle, /shop and /search.
+     collection.js reads the URL and asks the API for the right set. -->
+<main id="main" class="page">
+  <div class="wrap">
+
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <a href="/">Home</a> <span aria-hidden="true">/</span>
+      <span id="crumbHere">Shop</span>
+    </nav>
+
+    <header class="page__head">
+      <h1 class="page__title" id="listTitle">Shop</h1>
+      <p class="page__sub" id="listCount" role="status"></p>
+    </header>
+
+    <div class="listing" id="listing" aria-busy="true">
+      <p class="listing__msg">Loading…</p>
+    </div>
+
+  </div>
+</main>
+
+<div id="siteFooter"></div>
+
+<script src="/config.js"></script>
+<script src="/api.js"></script>
+<script src="/shared.js"></script>
+<script src="/layout.js"></script>
+<script src="/cart.js"></script>
+<script src="/collection.js"></script>
+</body>
+</html>

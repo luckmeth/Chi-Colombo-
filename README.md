@@ -3,11 +3,32 @@
 Static storefront + Supabase-backed API.
 
 ```
-carnage-replica/
+chic-colombo/
 ├── index.html            storefront markup
+├── admin.html            admin panel
 ├── styles.css            theme (brown palette, Sri Lankan motifs, animations)
-├── script.js             UI behaviour, renders catalogue
+├── config.js             where the browser finds the API and Supabase
 ├── api.js                API client (degrades gracefully when offline)
+├── shared.js             helpers + the product card renderer
+├── layout.js             injects the shared header/footer/cart drawer
+├── cart.js               server-backed cart, shared by every page
+├── vercel.json           clean URLs + route rewrites
+├── package.json          deps + scripts for the whole project
+├── partials/             header + footer markup, injected by layout.js
+├── api/
+│   └── [[...path]].js    Vercel entry point — hands /api/* to the Express app
+│
+│   pages, one script each:
+├── index.html  home.js         hero, rails, brand film
+├── collection.html  collection.js   /shop, /collections/:handle, /search
+├── product.html  product.js     variant + size selection
+├── cart.html  cartpage.js
+├── checkout.html  checkout.js
+├── confirmation.html  confirmation.js   /order/:number
+├── track.html  track.js       order lookup by number + email
+├── page.html  page.js         /pages/:slug, edited in the admin panel
+├── 404.html
+│
 ├── assets/
 │   ├── hero-veranda.png  hero photograph
 │   └── logo.png          ← YOU NEED TO ADD THIS (see below)
@@ -16,10 +37,16 @@ carnage-replica/
 │   ├── 02_seed.sql       catalogue seed
 │   ├── 03_admin.sql      admins, hero slides, settings
 │   ├── 04_storage.sql    media bucket + storage policies
-│   └── setup_all.sql     all four concatenated, for one-shot setup
+│   ├── 05_content.sql    editable content pages
+│   ├── 06_payments.sql   payment credentials, order timeline
+│   └── setup_all.sql     all six concatenated, for one-shot setup
 └── server/
-    ├── index.js          Express API
+    ├── app.js            the Express app — every route lives here
+    ├── index.js          local dev listener (production uses api/ instead)
+    ├── admin.js          /api/admin routes
+    ├── payments.js       PayHere + order tracking
     ├── db.js             Supabase clients
+    ├── env.js            loads server/.env whatever the working directory
     └── .env.example      copy to .env
 ```
 
@@ -33,10 +60,10 @@ hand-drawn SVG approximation, which is *not* your real logo.
 Save your logo — ideally with the background removed — to:
 
 ```
-carnage-replica/assets/logo.png
+assets/logo.png
 ```
 
-`script.js` probes for that file on load. When it's there, it swaps in
+`layout.js` probes for that file on load. When it's there, it swaps in
 automatically and deletes the SVG stand-ins. No code changes needed.
 
 ---
@@ -55,8 +82,8 @@ $env:SUPABASE_PROJECT_REF  = "dvvpwmmhybttrijbnakf"
 node supabase/apply.mjs
 ```
 
-`setup_all.sql` is generated from `01_schema.sql` + `02_seed.sql` +
-`03_admin.sql`; edit those and regenerate rather than editing it directly. Every
+`setup_all.sql` is generated from the numbered files; edit those and
+regenerate rather than editing it directly. Every
 insert is guarded, so re-running is safe.
 
 **Before a fresh run, change the seeded admin email** in `03_admin.sql` — it
@@ -115,14 +142,15 @@ It raises distinct error codes the API maps to HTTP:
 ## 3. API server
 
 ```bash
-cd server
-npm install
-npm start
+npm install      # from the repo root — there is one package.json now
+npm start        # API on :8787
+npm run serve    # storefront on :4321, in another terminal
 ```
 
 `server/.env` is already populated with this project's URL and keys. On a fresh
-clone, `cp .env.example .env` and fill it from Supabase → Project Settings →
-API.
+clone, `cp server/.env.example server/.env` and fill it from Supabase → Project
+Settings → API. `server/env.js` loads it by absolute path, so the scripts work
+from any directory.
 
 > `SUPABASE_SERVICE_ROLE_KEY` bypasses RLS. Server-side only — never ship it to
 > the browser. `.gitignore` already excludes `.env`.
@@ -140,9 +168,15 @@ API.
 | `POST` | `/api/cart/:cartId/items` | `{ variant_id, qty }` |
 | `PATCH` | `/api/cart/:cartId/items/:itemId` | `{ qty }`, `0` removes |
 | `DELETE` | `/api/cart/:cartId/items/:itemId` | |
-| `POST` | `/api/checkout` | `{ cart_id, email, address, shipping_cents }` |
+| `POST` | `/api/checkout` | `{ cart_id, email, address }` — shipping is priced server-side |
 | `GET` | `/api/orders` | requires `Authorization: Bearer <token>` |
 | `POST` | `/api/newsletter` | `{ email }` |
+| `GET` | `/api/pages/:slug` | published content pages |
+| `GET` | `/api/shipping-quote` | `?subtotal_cents=` |
+| `GET` | `/api/payments/methods` | which providers checkout may offer |
+| `POST` | `/api/payments/payhere/start` | `{ order_id }` → signed form fields |
+| `POST` | `/api/payments/payhere/notify` | PayHere webhook, verified by `md5sig` |
+| `POST` | `/api/track` | `{ order_number, email }` |
 
 Admin-only, all under `/api/admin` and gated by `site_admins`:
 
@@ -174,7 +208,7 @@ The master admin account already exists and is linked in `site_admins`. To add
 another, or to reset the password on this one:
 
 ```bash
-cd carnage-replica/server && npm run create-admin
+npm run create-admin
 ```
 
 It prompts for the email and password (hidden as you type), creates the
@@ -200,6 +234,8 @@ security boundary. `is_admin()` enforces the same rule again at the RLS layer.
 | Hero slider | add/edit/reorder/delete image **and video** slides, set copy and buttons, toggle live; drop a file to upload the media or the video poster |
 | Orders | filter by status, change status |
 | Contact & social | phone, WhatsApp, hotline, emails, address, maps link, shipping rates, announcement bar copy, social links |
+| Payments | PayHere and PayPal keys, sandbox/live toggle; secrets are write-only |
+| Pages | edit terms, privacy, refunds, shipping, FAQ and the rest as rich text |
 | Subscribers | list + CSV export |
 
 Products are **archived, not deleted** (order history references their
@@ -238,16 +274,124 @@ The page renders its built-in catalogue immediately, then calls
 rails and `<html>` gets `.api-live`. If not, the built-in data stays and the
 site keeps working. **The backend is optional for the page to run.**
 
-Point the client elsewhere by setting `window.CHIC_API_BASE` before `api.js`.
+Point the client elsewhere by setting `window.CHIC_API_BASE` before `config.js`
+— an explicit value always wins over the automatic one.
+
+---
+
+## 6. Deployment (Vercel)
+
+The storefront and the API deploy together, from the same repo, to the same
+origin. No build step: Vercel serves the repo root as static files and turns
+`api/[[...path]].js` into one serverless function that handles every `/api/*`
+request.
+
+Three pieces make that work, and each is load-bearing:
+
+| | |
+|---|---|
+| `api/[[...path]].js` | The optional-catch-all filename is deliberate. It leaves the full path on `req.url`, so the routes in `server/app.js` (`/api/products`, `/api/cart/:id`) keep matching. A plain `api/index.js` would deliver `/api` instead and every route would 404. |
+| `vercel.json` | `cleanUrls: true` is why `/admin` serves `admin.html`. Without it that URL 404s. |
+| `config.js` | Resolves the API base to `''` (same origin) anywhere but localhost. Same origin also means CORS never comes into it. |
+
+Set these in **Project Settings → Environment Variables**:
+
+```
+SUPABASE_URL
+SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+CORS_ORIGIN                  # your deployed origin; same-origin needs no entry
+```
+
+> `SUPABASE_SERVICE_ROLE_KEY` bypasses RLS. It belongs in the environment only —
+> never in `config.js` or any file the browser downloads.
+
+`server/app.js` sets `trust proxy` to 1. Behind Vercel's edge every request
+otherwise appears to come from the same address, and the rate limiter would
+treat all visitors as one client and throttle the whole site.
+
+After deploying, check `/api/health` returns `{"ok":true,"db":"ok"}` and that
+`/admin` loads the panel.
+
+### The rate limiter is best-effort in production
+
+`express-rate-limit` keeps its counters in memory. Serverless instances come and
+go and don't share state, so the 30/min budget is per-instance rather than
+global. It still blunts a naive flood; it is not a real defence. Moving the
+counters into Postgres or Upstash is the fix if that day comes.
+
+---
+
+## 6. Payments
+
+PayHere is wired end to end. Enter your keys in the admin panel under
+**Payments** — nothing needs redeploying, and the checkout page starts offering
+the method as soon as a merchant ID and secret are saved.
+
+Keys live in `payment_settings`, which has **RLS enabled and no policies at
+all**. That is deliberate: no policy means no row is readable by the anon or
+authenticated roles, ever. The admin panel talks to Supabase with the anon key
+plus your JWT, so an `is_admin()` read policy there would put live payment
+secrets into a browser. Only the API reaches them, with the service-role key,
+and `GET /api/admin/payments` returns whether a secret is set and its last four
+characters — never the value.
+
+The flow:
+
+1. `POST /api/checkout` creates the order as `pending` and holds the stock.
+2. `POST /api/payments/payhere/start` computes the signature server-side and
+   returns the form fields. The secret never leaves the server.
+3. The browser auto-submits to PayHere's sandbox or live checkout.
+4. PayHere calls `POST /api/payments/payhere/notify`. That route is public by
+   necessity — PayHere's servers call it, not the shopper — and is trusted only
+   because `md5sig` can be produced by nobody without the merchant secret. A
+   forged payload gets a 403.
+5. Success marks the order paid and appends to its timeline. A cancelled or
+   failed payment cancels the order **and returns the stock**.
+
+The notification also checks that the amount PayHere captured matches the order
+total, and ignores a second notification for an order already paid.
+
+**Testing locally**: PayHere cannot reach `localhost`, so the webhook can only
+be exercised by posting a correctly-signed payload directly. The real callback
+works once deployed, because `notify_url` is built from the request's own host.
+
+---
+
+## 7. Order tracking
+
+Guest checkout means there is no account to sign into, so `/track` finds an
+order by its number plus the email it was placed with. `POST /api/track` answers
+identically for "no such order" and "wrong email", and is rate limited to 10
+attempts a minute — order numbers run in sequence from 1001, so it is the
+obvious thing to enumerate.
+
+Courier and tracking number are set per order in the admin panel and appear on
+the customer's tracking page.
 
 ---
 
 ## Not done yet
 
-- **No payment provider.** `checkout_cart()` writes orders as `pending`. Wire
-  Stripe/PayHere and flip to `paid` on webhook confirmation.
-- **No auth UI.** The schema and `/api/orders` support signed-in customers, but
-  the page has no login screen.
+- **No PayHere account yet.** The integration is complete and tested against a
+  signed sandbox payload, but nothing can be charged until real merchant
+  credentials are entered in the admin panel.
+- **PayPal is deliberately off.** PayPal does not settle in LKR, so it cannot
+  charge a cart priced in rupees. The credential fields and the provider
+  abstraction are in place; enabling it needs a currency decision first —
+  most likely charging USD at a rate set in the admin panel.
+- **No customer accounts.** Checkout is guest-only by design; orders are found
+  at `/track` with an order number and email. The `customers` table and the
+  auth trigger are there if accounts are wanted later.
+- **Legal copy is a draft.** `05_content.sql` seeds working terms, privacy,
+  refund and shipping pages written for a Sri Lankan apparel shop. Read them
+  and make them true for your business before taking real orders — PayHere
+  will not approve a live merchant account without them.
+- **Stock is held by unpaid orders.** `checkout_cart()` decrements inventory
+  when the order is created, before payment. A failed or cancelled PayHere
+  notification restocks it, and the admin panel has a cancel-and-restock
+  action, but an abandoned checkout that never reports back holds its units
+  until someone cancels it.
 - **Product cards fall back to gradients.** Real photography renders as soon as
   a product has images; products without any keep the woven gradient placeholder.
 - **Admin writes have not been exercised.** Sign-in, sign-out and all six

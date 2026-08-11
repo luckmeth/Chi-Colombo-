@@ -2,12 +2,22 @@ import { createClient } from '@supabase/supabase-js';
 
 const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY } = process.env;
 
-if (!SUPABASE_URL) {
-  throw new Error('SUPABASE_URL is missing. Copy .env.example to .env and fill it in.');
-}
+/* This module is imported at cold start, so a missing variable takes the whole
+   function down before any route runs — on a platform that means an opaque 500
+   with the real cause buried in the build log. Name every missing variable at
+   once, and say where it is meant to come from in each environment. */
+const missing = [
+  ['SUPABASE_URL', SUPABASE_URL],
+  ['SUPABASE_SERVICE_ROLE_KEY', SUPABASE_SERVICE_ROLE_KEY]
+].filter(([, value]) => !value).map(([name]) => name);
 
-if (!SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error('SUPABASE_SERVICE_ROLE_KEY is missing. Copy .env.example to .env and fill it in.');
+if (missing.length) {
+  throw new Error(
+    `Supabase credentials missing: ${missing.join(', ')}.\n` +
+    '  Locally:  copy server/.env.example to server/.env and fill it in.\n' +
+    '  On Vercel: Project Settings -> Environment Variables.\n' +
+    '  Values are in Supabase -> Project Settings -> API.'
+  );
 }
 
 /**

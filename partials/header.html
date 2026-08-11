@@ -1,0 +1,93 @@
+<!-- ============ ANNOUNCEMENT ============ -->
+<div class="announce">
+  <div class="announce__track" id="announceTrack"></div>
+</div>
+
+<!-- ============ HEADER ============ -->
+<header class="header" id="header">
+  <div class="header__inner">
+
+    <button class="burger" id="burger" aria-label="Menu" aria-expanded="false">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+        <path d="M1 4h18M1 10h18M1 16h18"/>
+      </svg>
+    </button>
+
+    <a href="/" class="logo" aria-label="Chic Colombo home">
+      <!-- Real brand logo. Drop assets/logo.png in and layout.js swaps it in,
+           hiding the SVG stand-in below. -->
+      <img class="logo__img" alt="Chic Colombo" hidden>
+
+      <!-- SVG stand-in — approximation, replaced as soon as logo.png exists -->
+      <svg class="logo__mark" viewBox="0 0 300 150" aria-hidden="true">
+        <path d="M22 96C2 88-8 68-3 48c4-12 15-18 22-13 6 4 4 13-3 15-5 2-8 7-6 12 3 9 9 15 18 19z"/>
+        <ellipse cx="62" cy="86" rx="36" ry="31"/>
+        <ellipse cx="150" cy="84" rx="42" ry="27"/>
+        <rect x="58" y="60" width="98" height="49" rx="24"/>
+        <path d="M178 70c9-7 18-15 27-19l9 16c-7 4-14 9-20 17z"/>
+        <ellipse cx="222" cy="58" rx="25" ry="19"/>
+        <path d="M237 65c11-2 20 1 24 6 3 6-2 11-11 12-8 1-15-3-18-8z"/>
+        <path d="M204 46c-3-10-1-17 4-18 4-2 9 3 11 12z"/>
+        <path d="M231 42c1-10 5-15 9-15 5 1 8 6 6 15z"/>
+        <path d="M42 106h15l-3 34c0 5-3 8-7 8s-8-3-8-8z"/>
+        <path d="M76 108h15l-3 32c0 5-3 8-7 8s-8-3-8-8z"/>
+        <path d="M134 106h15l-3 34c0 5-3 8-7 8s-8-3-8-8z"/>
+        <path d="M168 104h15l-3 36c0 5-3 8-7 8s-8-3-8-8z"/>
+      </svg>
+      <span class="logo__type">
+        <svg viewBox="0 0 240 34" aria-hidden="true">
+          <text x="0" y="16" font-size="16">chic</text>
+          <text x="0" y="32" font-size="16">colombo</text>
+        </svg>
+      </span>
+    </a>
+
+    <!-- data-mega selects which set of collections layout.js paints into the
+         panel below; the href is where the link itself goes. -->
+    <nav class="nav" aria-label="Primary">
+      <a href="/shop?audience=womens" class="nav__link" data-mega="womens">WOMEN</a>
+      <a href="/shop?audience=mens" class="nav__link" data-mega="mens">MEN</a>
+      <a href="/collections/accessories" class="nav__link" data-mega="unisex">ACCESSORIES</a>
+      <a href="/pages/gift-cards" class="nav__link">GIFT CARDS</a>
+    </nav>
+
+    <div class="header__actions">
+      <button class="iconbtn" id="searchBtn" aria-label="Search">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+          <circle cx="9" cy="9" r="6"/><path d="M17 17l-3.5-3.5"/>
+        </svg>
+      </button>
+      <button class="iconbtn" id="cartBtn" aria-label="Cart">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+          <path d="M4 6h12l-1 12H5L4 6z"/><path d="M7 6V4.5a3 3 0 0 1 6 0V6"/>
+        </svg>
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Columns are painted per nav item from /api/collections, so adding a
+       collection in the admin panel puts it in the menu with no code change. -->
+  <div class="mega" id="mega">
+    <div class="mega__inner">
+      <div class="mega__cols" id="megaCols"></div>
+      <div class="mega__promos" id="megaPromos"></div>
+    </div>
+  </div>
+</header>
+
+<div class="drawer" id="drawer" aria-hidden="true">
+  <div class="drawer__panel">
+    <button class="drawer__close" id="drawerClose" aria-label="Close menu">&times;</button>
+    <a href="/shop?audience=womens">WOMEN</a>
+    <a href="/shop?audience=mens">MEN</a>
+    <a href="/collections/accessories">ACCESSORIES</a>
+    <a href="/pages/gift-cards">GIFT CARDS</a>
+    <a href="/collections/latest" class="drawer__sub">New Arrivals</a>
+    <a href="/collections/leopard-capsule" class="drawer__sub">The Leopard Capsule</a>
+    <a href="/collections/batik-edit" class="drawer__sub">Batik Edit</a>
+    <a href="/track" class="drawer__sub">Track my order</a>
+  </div>
+</div>
+<div class="scrim" id="scrim"></div>

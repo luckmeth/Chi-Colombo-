@@ -1,0 +1,32 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/collections/:handle",
+      "destination": "/collection.html"
+    },
+    {
+      "source": "/products/:handle",
+      "destination": "/product.html"
+    },
+    {
+      "source": "/pages/:slug",
+      "destination": "/page.html"
+    },
+    {
+      "source": "/order/:number",
+      "destination": "/confirmation.html"
+    },
+    {
+      "source": "/shop",
+      "destination": "/collection.html"
+    },
+    {
+      "source": "/search",
+      "destination": "/collection.html"
+    }
+  ]
+}
